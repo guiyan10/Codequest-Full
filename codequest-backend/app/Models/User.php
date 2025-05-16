@@ -25,6 +25,7 @@ class User extends Authenticatable
         'avatar',
         'level',
         'xp',
+        'nivel',
     ];
 
     /**
@@ -47,6 +48,7 @@ class User extends Authenticatable
         'password' => 'hashed',
         'level' => 'integer',
         'xp' => 'integer',
+        'nivel' => 'string',
     ];
 
     /**
@@ -57,5 +59,6 @@ class User extends Authenticatable
     protected $attributes = [
         'level' => 1,
         'xp' => 0,
+        'nivel' => 'user',
     ];
 }

@@ -21,6 +21,7 @@ Route::middleware('auth:sanctum')->group(function () {
             'avatar' => $user->avatar,
             'level' => $user->level,
             'xp' => $user->xp,
+            'nivel' => $user->nivel,
         ]);
     });
     

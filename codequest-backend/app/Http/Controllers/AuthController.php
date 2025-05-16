@@ -31,6 +31,7 @@ class AuthController extends Controller
                     'avatar' => $user->avatar,
                     'level' => $user->level,
                     'xp' => $user->xp,
+                    'nivel' => $user->nivel,
                 ],
                 'token' => $user->createToken('auth_token')->plainTextToken,
             ]);
@@ -82,6 +83,7 @@ class AuthController extends Controller
                     'avatar' => $user->avatar,
                     'level' => $user->level,
                     'xp' => $user->xp,
+                    'nivel' => $user->nivel,
                 ],
             ]);
         }

@@ -8,6 +8,7 @@ interface User {
   avatar?: string;
   level: number;
   xp: number;
+  nivel: 'admin' | 'user';
 }
 
 export const useAuth = () => {
