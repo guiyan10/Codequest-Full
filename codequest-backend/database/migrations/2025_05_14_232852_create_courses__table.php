@@ -18,7 +18,6 @@ return new class extends Migration
             $table->string('thumbnail')->nullable();
             $table->enum('difficulty_level', ['easy', 'medium', 'hard']);
             $table->enum('status', ['draft', 'published', 'archived'])->default('draft');
-            $table->foreignId('language_id')->constrained('languages')->onDelete('cascade');
             $table->timestamps();
         });
     }

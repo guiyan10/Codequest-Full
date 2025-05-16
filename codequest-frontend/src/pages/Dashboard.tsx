@@ -91,6 +91,7 @@ const Dashboard = () => {
     { name: 'Cursos', icon: <BookIcon className="w-5 h-5" />, path: '/cursos' },
     { name: 'Perfil', icon: <UserRoundIcon className="w-5 h-5" />, path: '/perfil' },
     { name: 'Configurações', icon: <SettingsIcon className="w-5 h-5" />, path: '/configuracoes' },
+    { name: 'Adm-Dashboard', icon: <LayoutDashboardIcon className="w-5 h-5" />, path: '/adm-dashboard'},
   ];
 
   const handleLogout = () => {
