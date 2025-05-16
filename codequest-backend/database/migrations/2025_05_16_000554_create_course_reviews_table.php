@@ -11,13 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('courses', function (Blueprint $table) {
+        Schema::create('course_reviews', function (Blueprint $table) {
             $table->id();
-            $table->string('title');
-            $table->text('description')->nullable();
-            $table->string('thumbnail')->nullable();
-            $table->enum('difficulty_level', ['easy', 'medium', 'hard']);
-            $table->enum('status', ['draft', 'published', 'archived'])->default('draft');
+            $table->foreignId('course_id')->constrained('courses')->onDelete('cascade');
+            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
+            $table->integer('rating');
+            $table->text('comment')->nullable();
             $table->timestamps();
         });
     }
@@ -27,7 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        
-        Schema::dropIfExists('courses_');
+        Schema::dropIfExists('course_reviews');
     }
 };

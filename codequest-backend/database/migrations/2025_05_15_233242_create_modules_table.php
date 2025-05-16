@@ -11,13 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('courses', function (Blueprint $table) {
+        Schema::create('modules', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('course_id')->constrained('courses')->onDelete('cascade');
             $table->string('title');
             $table->text('description')->nullable();
-            $table->string('thumbnail')->nullable();
-            $table->enum('difficulty_level', ['easy', 'medium', 'hard']);
-            $table->enum('status', ['draft', 'published', 'archived'])->default('draft');
+              $table->unsignedInteger('order_index');
             $table->timestamps();
         });
     }
@@ -27,7 +26,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        
-        Schema::dropIfExists('courses_');
+        Schema::dropIfExists('modules');
+
     }
+    
 };

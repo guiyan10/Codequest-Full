@@ -11,13 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('courses', function (Blueprint $table) {
+        Schema::create('languages', function (Blueprint $table) {
             $table->id();
-            $table->string('title');
-            $table->text('description')->nullable();
-            $table->string('thumbnail')->nullable();
-            $table->enum('difficulty_level', ['easy', 'medium', 'hard']);
-            $table->enum('status', ['draft', 'published', 'archived'])->default('draft');
+            $table->string('name');
+            $table->string('icon')->nullable();
+            $table->string('color')->nullable();
+            $table->string('description')->nullable();
+            $table->string('image', 255)->nullable();
             $table->timestamps();
         });
     }
@@ -27,7 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        
-        Schema::dropIfExists('courses_');
+        Schema::dropIfExists('languages');
     }
 };
