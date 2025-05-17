@@ -34,10 +34,33 @@ export const useAuth = () => {
     fetchUser();
   }, []);
 
+  const login = async (email: string, password: string) => {
+    const response = await authAPI.login(email, password);
+    const { token, user } = response.data;
+    localStorage.setItem('token', token);
+    setUser(user);
+    return response;
+  };
+
   const logout = () => {
     localStorage.removeItem('token');
     setUser(null);
   };
 
-  return { user, loading, logout };
+  const isAdmin = () => {
+    return user?.nivel === 'admin';
+  };
+
+  const isAuthenticated = () => {
+    return !!user;
+  };
+
+  return { 
+    user, 
+    loading, 
+    login,
+    logout,
+    isAdmin,
+    isAuthenticated
+  };
 }; 

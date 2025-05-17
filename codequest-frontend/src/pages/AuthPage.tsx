@@ -7,11 +7,13 @@ import { useAlertToast } from '@/components/ui/alert-toast';
 import Header from '@/components/shared/Header';
 import Footer from '@/components/shared/Footer';
 import { authAPI } from '@/services/api';
+import { useAuth } from '@/hooks/useAuth';
 
 const AuthPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const toast = useAlertToast();
+  const { login } = useAuth();
   
   // Get register param from URL
   const queryParams = new URLSearchParams(location.search);
@@ -81,14 +83,19 @@ const AuthPage = () => {
     
     try {
       if (isLogin) {
-        const response = await authAPI.login(formData.email, formData.password);
-        localStorage.setItem('token', response.data.token);
+        const response = await login(formData.email, formData.password);
         
         toast.success({ 
           title: 'Login realizado com sucesso!',
-          description: 'Redirecionando para o dashboard...'
+          description: 'Redirecionando...'
         });
-        setTimeout(() => navigate('/dashboard'), 1000);
+
+        // Redireciona baseado no nível do usuário
+        if (response.data.user.nivel === 'admin') {
+          setTimeout(() => navigate('/adm-dashboard'), 1000);
+        } else {
+          setTimeout(() => navigate('/dashboard'), 1000);
+        }
       } else {
         const response = await authAPI.register(
           formData.name, 

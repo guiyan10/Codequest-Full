@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarTrigger } from '@/components/ui/sidebar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -12,27 +12,20 @@ import { LayoutDashboardIcon, BookIcon, UserRoundIcon, SettingsIcon, LogOutIcon,
 import { useAuth } from '@/hooks/useAuth';
 
 const ProfilePage = () => {
+  const navigate = useNavigate();
   const toast = useAlertToast();
-  const { user, logout } = useAuth();
-  
-  // Simulated user data
-  const [userData] = useState({
-    name: user?.name || 'Usuário',
-    email: user?.email || '',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop',
-    bio: 'Desenvolvedora front-end apaixonada por criar interfaces bonitas e funcionais. Estudante de Ciência da Computação.',
-    location: 'São Paulo, Brasil',
-    joinDate: 'Maio 2023',
-    stats: {
-      level: 7,
-      xp: 3450,
-      streak: 12,
-      completed: 28,
-      rank: 342
-    }
-  });
+  const { user, loading, logout } = useAuth();
 
-  // Simulated courses/languages data
+  if (loading) {
+    return <div>Carregando...</div>;
+  }
+
+  if (!user) {
+    navigate('/auth');
+    return null;
+  }
+
+  // Dados simulados que não dependem do usuário
   const languages = [
     {
       id: 'javascript',
@@ -63,7 +56,6 @@ const ProfilePage = () => {
     }
   ];
   
-  // Simulated badges data
   const badges = [
     { name: 'Iniciante', icon: '/badges/novice.svg', unlocked: true, description: 'Completou seu primeiro módulo' },
     { name: 'Persistente', icon: '/badges/persistent.svg', unlocked: true, description: '7 dias seguidos de estudo' },
@@ -105,6 +97,7 @@ const ProfilePage = () => {
   // Handle logout
   const handleLogout = () => {
     logout();
+    navigate('/auth');
   };
   
   return (
@@ -125,17 +118,17 @@ const ProfilePage = () => {
               <div className="px-3 py-2">
                 <div className="flex items-center px-2 py-3 mb-2">
                   <img
-                    src={userData.avatar}
-                    alt={userData.name}
+                    src={user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random`}
+                    alt={user.name}
                     className="w-10 h-10 rounded-full mr-3 border-2 border-codequest-light"
                   />
                   <div>
-                    <h3 className="font-medium text-codequest-dark">{userData.name}</h3>
+                    <h3 className="font-medium text-codequest-dark">{user.name}</h3>
                     <div className="flex items-center">
                       <div className="w-4 h-4 bg-codequest-purple rounded-full flex items-center justify-center text-white text-xs font-bold mr-1">
-                        {userData.stats.level}
+                        {user.level}
                       </div>
-                      <span className="text-xs text-gray-500">Nível {userData.stats.level}</span>
+                      <span className="text-xs text-gray-500">Nível {user.level}</span>
                     </div>
                   </div>
                 </div>
@@ -193,8 +186,8 @@ const ProfilePage = () => {
                   <div className="flex flex-col md:flex-row items-center md:items-start">
                     <div className="relative mb-6 md:mb-0 md:mr-8">
                       <img
-                        src={userData.avatar}
-                        alt={userData.name}
+                        src={user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=random`}
+                        alt={user.name}
                         className="w-32 h-32 rounded-full object-cover border-4 border-codequest-light"
                       />
                       <button 
@@ -208,8 +201,8 @@ const ProfilePage = () => {
                     <div className="flex-1 text-center md:text-left">
                       <div className="flex flex-col md:flex-row md:items-center md:justify-between">
                         <div>
-                          <h1 className="text-3xl font-bold text-codequest-dark">{userData.name}</h1>
-                          <p className="text-gray-500 mt-1">{userData.email}</p>
+                          <h1 className="text-3xl font-bold text-codequest-dark">{user.name}</h1>
+                          <p className="text-gray-500 mt-1">{user.email}</p>
                         </div>
                         <button
                           className="mt-4 md:mt-0 inline-flex items-center px-4 py-2 rounded-md bg-white border border-gray-200 text-gray-700 hover:bg-gray-50"
@@ -221,7 +214,7 @@ const ProfilePage = () => {
                       </div>
                       
                       <div className="mt-4">
-                        <p className="text-gray-600">{userData.bio}</p>
+                        <p className="text-gray-600">Estudante da plataforma CodeQuest</p>
                       </div>
                       
                       <div className="mt-4 flex flex-wrap items-center gap-4 justify-center md:justify-start">
@@ -230,13 +223,13 @@ const ProfilePage = () => {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                           </svg>
-                          <span className="text-gray-600 text-sm">{userData.location}</span>
+                          <span className="text-gray-600 text-sm">Brasil</span>
                         </div>
                         <div className="flex items-center">
                           <svg className="w-4 h-4 text-gray-400 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                           </svg>
-                          <span className="text-gray-600 text-sm">Membro desde {userData.joinDate}</span>
+                          <span className="text-gray-600 text-sm">Membro desde 2024</span>
                         </div>
                       </div>
                     </div>
@@ -246,7 +239,13 @@ const ProfilePage = () => {
 
               {/* Profile Stats */}
               <div className="container mx-auto px-4 py-6">
-                <ProfileStats stats={userData.stats} />
+                <ProfileStats stats={{
+                  level: user.level,
+                  xp: user.xp,
+                  streak: 0,
+                  completed: 0,
+                  rank: 0
+                }} />
               </div>
               
               {/* Profile Details */}
