@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarTrigger } from '@/components/ui/sidebar';
@@ -7,10 +6,26 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import LanguageCard from '@/components/shared/LanguageCard';
 import { Input } from '@/components/ui/input';
-import { LayoutDashboardIcon, BookIcon, UserRoundIcon, SettingsIcon, LogOutIcon, SearchIcon } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { PlusIcon, LayoutDashboardIcon, BookIcon, UserRoundIcon, SettingsIcon, LogOutIcon, SearchIcon } from 'lucide-react';
+import { toast } from 'sonner';
+import { coursesService, Course, CreateCourseData } from '@/services/courses';
 
 const CoursesPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [isAddCourseModalOpen, setIsAddCourseModalOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [newCourse, setNewCourse] = useState<CreateCourseData>({
+    title: '',
+    description: '',
+    difficulty_level: '',
+    status: 'active',
+    language_id: '',
+    category: ''
+  });
   
   // Simulated user data
   const userData = {
@@ -115,6 +130,64 @@ const CoursesPage = () => {
     { name: 'Configurações', icon: <SettingsIcon className="w-5 h-5" />, path: '/adm/configuracoes' },
   ];
 
+  // Mock data for languages
+  const availableLanguages = [
+    { id: 1, name: 'JavaScript' },
+    { id: 2, name: 'Python' },
+    { id: 3, name: 'PHP' },
+    { id: 4, name: 'Java' },
+    { id: 5, name: 'C#' }
+  ];
+
+  // Mock data for difficulty levels
+  const difficultyLevels = [
+    { value: 'beginner', label: 'Iniciante' },
+    { value: 'intermediate', label: 'Intermediário' },
+    { value: 'advanced', label: 'Avançado' }
+  ];
+
+  // Mock data for status
+  const statusOptions = [
+    { value: 'active', label: 'Ativo' },
+    { value: 'inactive', label: 'Inativo' },
+    { value: 'draft', label: 'Rascunho' }
+  ];
+
+  // Mock data for categories
+  const categoryOptions = [
+    { value: 'frontend', label: 'Front-end' },
+    { value: 'backend', label: 'Back-end' },
+    { value: 'database', label: 'Banco de Dados' },
+    { value: 'mobile', label: 'Mobile' }
+  ];
+
+  const handleAddCourse = async () => {
+    try {
+      setIsLoading(true);
+      // TODO: Uncomment when API is ready
+      // await coursesService.create(newCourse);
+      console.log('New course data:', newCourse);
+      
+      toast.success('Curso criado com sucesso!');
+      
+      // Reset form and close modal
+      setNewCourse({
+        title: '',
+        description: '',
+        difficulty_level: '',
+        status: 'active',
+        language_id: '',
+        category: ''
+      });
+      setIsAddCourseModalOpen(false);
+    } catch (error) {
+      console.error('Error adding course:', error);
+      toast.error('Erro ao criar curso. Tente novamente.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Filter languages based on search term and selected category
   const filterLanguages = (languages: any[], category: string) => {
     return languages.filter(language => {
@@ -200,6 +273,13 @@ const CoursesPage = () => {
                 </SidebarTrigger>
                 <h1 className="text-xl font-bold text-codequest-dark">Cursos</h1>
               </div>
+              <Button
+                onClick={() => setIsAddCourseModalOpen(true)}
+                className="bg-codequest-purple hover:bg-codequest-purple/90 text-white"
+              >
+                <PlusIcon className="w-4 h-4 mr-2" />
+                Novo Curso
+              </Button>
             </header>
 
             {/* Courses Content */}
@@ -260,6 +340,142 @@ const CoursesPage = () => {
             </div>
           </div>
         </div>
+
+        {/* Add Course Modal */}
+        <Dialog open={isAddCourseModalOpen} onOpenChange={setIsAddCourseModalOpen}>
+          <DialogContent className="sm:max-w-[600px]">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-bold text-codequest-dark">Adicionar Novo Curso</DialogTitle>
+            </DialogHeader>
+            
+            <div className="grid gap-6 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="title">Título do Curso</Label>
+                <Input
+                  id="title"
+                  value={newCourse.title}
+                  onChange={(e) => setNewCourse({ ...newCourse, title: e.target.value })}
+                  placeholder="Digite o título do curso"
+                  disabled={isLoading}
+                />
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="description">Descrição</Label>
+                <Textarea
+                  id="description"
+                  value={newCourse.description}
+                  onChange={(e) => setNewCourse({ ...newCourse, description: e.target.value })}
+                  placeholder="Digite a descrição do curso"
+                  className="min-h-[100px]"
+                  disabled={isLoading}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="difficulty">Nível de Dificuldade</Label>
+                  <Select
+                    value={newCourse.difficulty_level}
+                    onValueChange={(value) => setNewCourse({ ...newCourse, difficulty_level: value })}
+                    disabled={isLoading}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o nível" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {difficultyLevels.map((level) => (
+                        <SelectItem key={level.value} value={level.value}>
+                          {level.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="status">Status</Label>
+                  <Select
+                    value={newCourse.status}
+                    onValueChange={(value) => setNewCourse({ ...newCourse, status: value })}
+                    disabled={isLoading}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {statusOptions.map((status) => (
+                        <SelectItem key={status.value} value={status.value}>
+                          {status.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="language">Linguagem</Label>
+                  <Select
+                    value={newCourse.language_id}
+                    onValueChange={(value) => setNewCourse({ ...newCourse, language_id: value })}
+                    disabled={isLoading}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione a linguagem" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableLanguages.map((language) => (
+                        <SelectItem key={language.id} value={language.id.toString()}>
+                          {language.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="category">Categoria</Label>
+                  <Select
+                    value={newCourse.category}
+                    onValueChange={(value) => setNewCourse({ ...newCourse, category: value })}
+                    disabled={isLoading}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione a categoria" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categoryOptions.map((category) => (
+                        <SelectItem key={category.value} value={category.value}>
+                          {category.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setIsAddCourseModalOpen(false)}
+                className="mr-2"
+                disabled={isLoading}
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleAddCourse}
+                className="bg-codequest-purple hover:bg-codequest-purple/90 text-white"
+                disabled={isLoading}
+              >
+                {isLoading ? 'Criando...' : 'Criar Curso'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </SidebarProvider>
     </div>
   );
