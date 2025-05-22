@@ -4,9 +4,9 @@ export interface Course {
   id: number;
   title: string;
   description: string;
-  difficulty_level: 'beginner' | 'intermediate' | 'advanced';
-  status: 'active' | 'inactive' | 'draft';
-  language_id: number;
+  difficulty_level: 'easy' | 'medium' | 'hard';
+  status: 'draft' | 'active' | 'inactive';
+  language_id?: number | null;
   category: 'frontend' | 'backend' | 'database' | 'mobile';
   created_at?: string;
   updated_at?: string;
@@ -17,7 +17,7 @@ export interface CreateCourseData {
   description: string;
   difficulty_level: string;
   status: string;
-  language_id: string;
+  // language_id?: string; // Temporariamente comentado para testes
   category: string;
 }
 

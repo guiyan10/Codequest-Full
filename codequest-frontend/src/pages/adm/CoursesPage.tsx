@@ -18,12 +18,13 @@ const CoursesPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddCourseModalOpen, setIsAddCourseModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [languages, setLanguages] = useState<{ id: number; name: string }[]>([]);
   const [newCourse, setNewCourse] = useState<CreateCourseData>({
     title: '',
     description: '',
     difficulty_level: '',
-    status: 'active',
-    language_id: '',
+    status: 'draft',
     category: ''
   });
   
@@ -141,16 +142,16 @@ const CoursesPage = () => {
 
   // Mock data for difficulty levels
   const difficultyLevels = [
-    { value: 'beginner', label: 'Iniciante' },
-    { value: 'intermediate', label: 'Intermediário' },
-    { value: 'advanced', label: 'Avançado' }
+    { value: 'easy', label: 'Fácil' },
+    { value: 'medium', label: 'Médio' },
+    { value: 'hard', label: 'Difícil' }
   ];
 
   // Mock data for status
   const statusOptions = [
-    { value: 'active', label: 'Ativo' },
-    { value: 'inactive', label: 'Inativo' },
-    { value: 'draft', label: 'Rascunho' }
+    { value: 'draft', label: 'Rascunho' },
+    { value: 'published', label: 'Publicado' },
+    { value: 'archived', label: 'Arquivado' }
   ];
 
   // Mock data for categories
@@ -161,12 +162,34 @@ const CoursesPage = () => {
     { value: 'mobile', label: 'Mobile' }
   ];
 
+  // Carregar cursos e linguagens ao montar o componente
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        console.log('Iniciando carregamento dos dados...');
+        const [coursesData, languagesData] = await Promise.all([
+          coursesService.getAll(),
+          coursesService.getLanguages()
+        ]);
+        console.log('Dados carregados:', { courses: coursesData, languages: languagesData });
+        setCourses(coursesData);
+        setLanguages(languagesData);
+      } catch (error) {
+        console.error('Erro ao carregar dados:', error);
+        toast.error('Erro ao carregar dados. Tente novamente.');
+      }
+    };
+
+    loadData();
+  }, []);
+
   const handleAddCourse = async () => {
     try {
       setIsLoading(true);
-      // TODO: Uncomment when API is ready
-      // await coursesService.create(newCourse);
-      console.log('New course data:', newCourse);
+      const response = await coursesService.create(newCourse);
+      
+      // Atualizar a lista de cursos
+      setCourses(prev => [...prev, response.data]);
       
       toast.success('Curso criado com sucesso!');
       
@@ -175,25 +198,34 @@ const CoursesPage = () => {
         title: '',
         description: '',
         difficulty_level: '',
-        status: 'active',
-        language_id: '',
+        status: 'draft',
         category: ''
       });
       setIsAddCourseModalOpen(false);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding course:', error);
-      toast.error('Erro ao criar curso. Tente novamente.');
+      if (error.response?.data?.errors) {
+        // Exibir erros de validação
+        Object.values(error.response.data.errors).forEach((messages: any) => {
+          messages.forEach((message: string) => {
+            toast.error(message);
+          });
+        });
+      } else {
+        toast.error('Erro ao criar curso. Tente novamente.');
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Filter languages based on search term and selected category
-  const filterLanguages = (languages: any[], category: string) => {
-    return languages.filter(language => {
-      const matchesSearch = language.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           language.description.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesCategory = category === 'all' || language.category === category;
+  // Filter courses based on search term and selected category
+  const filterCourses = (courses: Course[], category: string) => {
+    console.log('Filtrando cursos:', { courses, category, searchTerm });
+    return courses.filter(course => {
+      const matchesSearch = course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           course.description.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesCategory = category === 'all' || course.category === category;
       return matchesSearch && matchesCategory;
     });
   };
@@ -315,16 +347,56 @@ const CoursesPage = () => {
                   {categories.map(category => (
                     <TabsContent key={category.value} value={category.value}>
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                        {filterLanguages(allLanguages, category.value).map((language, index) => (
-                          <LanguageCard
-                            key={language.id}
-                            language={language}
-                            delay={index}
-                          />
+                        {filterCourses(courses, category.value).map((course, index) => (
+                          <motion.div
+                            key={course.id}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.3, delay: index * 0.1 }}
+                          >
+                            <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200 hover:shadow-lg transition-shadow">
+                              <div className="p-6">
+                                <div className="flex items-center justify-between mb-4">
+                                  <div className="flex items-center space-x-2">
+                                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center bg-gradient-to-br from-codequest-purple to-codequest-emerald`}>
+                                      <span className="text-white font-bold text-sm">&lt;/&gt;</span>
+                                    </div>
+                                    <div>
+                                      <h3 className="font-semibold text-codequest-dark">{course.title}</h3>
+                                      <p className="text-sm text-gray-500">{course.category}</p>
+                                    </div>
+                                  </div>
+                                </div>
+                                
+                                <p className="text-gray-600 text-sm mb-4 line-clamp-2">{course.description}</p>
+                                
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center space-x-2">
+                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                      course.difficulty_level === 'easy' ? 'bg-green-100 text-green-800' :
+                                      course.difficulty_level === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                                      'bg-red-100 text-red-800'
+                                    }`}>
+                                      {course.difficulty_level === 'easy' ? 'Fácil' :
+                                       course.difficulty_level === 'medium' ? 'Médio' : 'Difícil'}
+                                    </span>
+                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                      course.status === 'draft' ? 'bg-gray-100 text-gray-800' :
+                                      course.status === 'active' ? 'bg-green-100 text-green-800' :
+                                      'bg-red-100 text-red-800'
+                                    }`}>
+                                      {course.status === 'draft' ? 'Rascunho' :
+                                       course.status === 'active' ? 'Publicado' : 'Arquivado'}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </motion.div>
                         ))}
                       </div>
                       
-                      {filterLanguages(allLanguages, category.value).length === 0 && (
+                      {filterCourses(courses, category.value).length === 0 && (
                         <div className="text-center py-12">
                           <div className="text-codequest-purple mb-4">
                             <SearchIcon className="w-12 h-12 mx-auto opacity-50" />
@@ -415,8 +487,9 @@ const CoursesPage = () => {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
+                {/* Temporariamente comentado para testes
                 <div className="grid gap-2">
-                  <Label htmlFor="language">Linguagem</Label>
+                  <Label htmlFor="language">Linguagem (Opcional)</Label>
                   <Select
                     value={newCourse.language_id}
                     onValueChange={(value) => setNewCourse({ ...newCourse, language_id: value })}
@@ -426,7 +499,7 @@ const CoursesPage = () => {
                       <SelectValue placeholder="Selecione a linguagem" />
                     </SelectTrigger>
                     <SelectContent>
-                      {availableLanguages.map((language) => (
+                      {languages.map((language) => (
                         <SelectItem key={language.id} value={language.id.toString()}>
                           {language.name}
                         </SelectItem>
@@ -434,6 +507,7 @@ const CoursesPage = () => {
                     </SelectContent>
                   </Select>
                 </div>
+                */}
 
                 <div className="grid gap-2">
                   <Label htmlFor="category">Categoria</Label>

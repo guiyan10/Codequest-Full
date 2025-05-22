@@ -1,16 +1,19 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarTrigger } from '@/components/ui/sidebar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import LanguageCard from '@/components/shared/LanguageCard';
+import LanguageCard, { LanguageCardProps } from '@/components/shared/LanguageCard';
 import { Input } from '@/components/ui/input';
 import { LayoutDashboardIcon, BookIcon, UserRoundIcon, SettingsIcon, LogOutIcon, SearchIcon } from 'lucide-react';
+import { coursesService, Course } from '@/services/courses';
 
 const CoursesPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
   // Simulated user data
   const userData = {
@@ -28,84 +31,24 @@ const CoursesPage = () => {
     { value: 'mobile', label: 'Mobile' },
   ];
 
-  // Simulated courses data
-  const allLanguages = [
-    {
-      id: 'javascript',
-      name: 'JavaScript',
-      icon: '/javascript.svg',
-      description: 'Aprenda a linguagem que move a web. Do básico ao avançado com ES6+.',
-      color: 'border-yellow-400',
-      modules: 24,
-      progress: 45,
-      category: 'frontend'
-    },
-    {
-      id: 'python',
-      name: 'Python',
-      icon: '/python.svg',
-      description: 'Desenvolva aplicações com uma das linguagens mais versáteis e populares.',
-      color: 'border-blue-500',
-      modules: 20,
-      progress: 10,
-      category: 'backend'
-    },
-    {
-      id: 'html-css',
-      name: 'HTML & CSS',
-      icon: '/html-css.svg',
-      description: 'Crie websites responsivos com HTML5 e estilize com CSS3 moderno.',
-      color: 'border-orange-500',
-      modules: 18,
-      progress: 75,
-      category: 'frontend'
-    },
-    {
-      id: 'mysql',
-      name: 'MySQL',
-      icon: '/mysql.svg',
-      description: 'Gerencie bancos de dados relacionais com o sistema mais usado do mundo.',
-      color: 'border-blue-700',
-      modules: 16,
-      category: 'database'
-    },
-    {
-      id: 'nodejs',
-      name: 'Node.js',
-      icon: '/nodejs.svg',
-      description: 'Construa aplicações back-end escaláveis com JavaScript no servidor.',
-      color: 'border-green-500',
-      modules: 22,
-      category: 'backend'
-    },
-    {
-      id: 'react',
-      name: 'React',
-      icon: '/react.svg',
-      description: 'Crie interfaces de usuário modernas e reativas com a biblioteca do Facebook.',
-      color: 'border-blue-400',
-      modules: 20,
-      category: 'frontend'
-    },
-    {
-      id: 'php',
-      name: 'PHP',
-      icon: '/php.svg',
-      description: 'Desenvolva aplicações web do lado do servidor com a linguagem que potencia a web.',
-      color: 'border-purple-500',
-      modules: 19,
-      category: 'backend'
-    },
-    {
-      id: 'flutter',
-      name: 'Flutter',
-      icon: '/flutter.svg',
-      description: 'Crie apps nativos para Android e iOS com uma única base de código.',
-      color: 'border-cyan-500',
-      modules: 24,
-      category: 'mobile'
-    }
-  ];
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        setIsLoading(true);
+        const data = await coursesService.getAll();
+        console.log('Fetched courses:', data); // Log fetched data
+        setCourses(data);
+        setError(null);
+      } catch (err) {
+        setError('Erro ao carregar os cursos. Por favor, tente novamente.');
+        console.error('Error fetching courses:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchCourses();
+  }, []);
 
   // Sidebar navigation items
   const navigationItems = [
@@ -115,15 +58,95 @@ const CoursesPage = () => {
     { name: 'Configurações', icon: <SettingsIcon className="w-5 h-5" />, path: '/configuracoes' },
   ];
 
-  // Filter languages based on search term and selected category
-  const filterLanguages = (languages: any[], category: string) => {
-    return languages.filter(language => {
-      const matchesSearch = language.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           language.description.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesCategory = category === 'all' || language.category === category;
+  // Filter courses based on search term and selected category
+  const filterCourses = (courses: Course[], category: string) => {
+    console.log('Filtering courses with:', { searchTerm, category, coursesLength: courses.length }); // Log filtering parameters
+    return courses.filter(course => {
+      const matchesSearch = course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           course.description.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesCategory = category === 'all' || course.category === category;
       return matchesSearch && matchesCategory;
     });
   };
+
+  // Map course data to language card format
+  const mapCourseToLanguageCard = (course: Course): LanguageCardProps['language'] => {
+    let mappedStatus: 'draft' | 'published' | 'archived';
+    
+    switch (course.status) {
+      case 'active':
+        mappedStatus = 'published';
+        break;
+      case 'inactive':
+        mappedStatus = 'archived';
+        break;
+      case 'draft':
+      default: // Should only be 'draft' based on backend type, but include default for safety
+        mappedStatus = 'draft';
+        break;
+    }
+
+    return ({
+      id: course.id.toString(),
+      name: course.title,
+      icon: `/icons/${course.category}.svg`,
+      description: course.description,
+      color: `border-${getCategoryColor(course.category)}`,
+      modules: 0, // TODO: Add modules count when available
+      progress: 0, // TODO: Add progress when available
+      category: course.category,
+      difficulty: course.difficulty_level,
+      status: mappedStatus,
+    });
+  };
+
+  // Helper function to get color based on category
+  const getCategoryColor = (category: string) => {
+    switch (category) {
+      case 'frontend':
+        return 'blue-400';
+      case 'backend':
+        return 'green-500';
+      case 'database':
+        return 'blue-700';
+      case 'mobile':
+        return 'cyan-500';
+      default:
+        return 'gray-400';
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-codequest-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-codequest-purple border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="mt-4 text-codequest-dark font-medium">Carregando cursos...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-codequest-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-red-500 mb-4">
+            <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <p className="text-codequest-dark font-medium">{error}</p>
+          <Button
+            onClick={() => window.location.reload()}
+            className="mt-4 bg-codequest-purple text-white hover:bg-opacity-90"
+          >
+            Tentar novamente
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-codequest-background">
@@ -235,22 +258,22 @@ const CoursesPage = () => {
                   {categories.map(category => (
                     <TabsContent key={category.value} value={category.value}>
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                        {filterLanguages(allLanguages, category.value).map((language, index) => (
+                        {filterCourses(courses, category.value).map((course, index) => (
                           <LanguageCard
-                            key={language.id}
-                            language={language}
+                            key={course.id}
+                            language={mapCourseToLanguageCard(course)}
                             delay={index}
                           />
                         ))}
                       </div>
                       
-                      {filterLanguages(allLanguages, category.value).length === 0 && (
+                      {filterCourses(courses, category.value).length === 0 && (
                         <div className="text-center py-12">
                           <div className="text-codequest-purple mb-4">
                             <SearchIcon className="w-12 h-12 mx-auto opacity-50" />
                           </div>
-                          <h3 className="text-xl font-medium mb-2">Nenhum curso encontrado</h3>
-                          <p className="text-gray-500">Tente ajustar sua busca ou filtros</p>
+                          <h3 className="text-lg font-medium text-codequest-dark mb-2">Nenhum curso encontrado</h3>
+                          <p className="text-gray-500">Tente ajustar sua busca ou filtrar por outra categoria.</p>
                         </div>
                       )}
                     </TabsContent>

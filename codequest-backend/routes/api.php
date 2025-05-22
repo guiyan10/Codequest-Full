@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CourseController;
 use App\Http\Controllers\QuizModelController;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -30,4 +31,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/quiz/{id}', [QuizModelController::class, "destroy"]);
     Route::post('/quiz', [QuizModelController::class, "create"]);
     Route::put('/quiz/{id}', [QuizModelController::class, "edit"]);
+
+    // Rotas dos Cursos
+    Route::apiResource('courses', CourseController::class);
 });
