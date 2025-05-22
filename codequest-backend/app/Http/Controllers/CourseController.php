@@ -60,9 +60,10 @@ class CourseController extends Controller
 
         try {
             $data = $request->all();
-            // Remove language_id se não foi fornecido
-            if (!isset($data['language_id']) || empty($data['language_id'])) {
-                unset($data['language_id']);
+            
+            // Garante que language_id seja null se não foi fornecido ou está vazio
+            if (!isset($data['language_id']) || $data['language_id'] === '') {
+                $data['language_id'] = null;
             }
             
             $course = Course::create($data);

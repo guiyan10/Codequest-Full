@@ -58,7 +58,11 @@ api.interceptors.response.use(
         toast.error('Erro no servidor. Tente novamente mais tarde.');
         break;
       default:
-        toast.error('Ocorreu um erro. Tente novamente.');
+        if (error.message === 'Network Error') {
+          toast.error('Erro de conexão. Verifique sua internet e tente novamente.');
+        } else {
+          toast.error('Ocorreu um erro. Tente novamente.');
+        }
     }
 
     return Promise.reject(error);

@@ -13,8 +13,12 @@ import { Label } from '@/components/ui/label';
 import { PlusIcon, LayoutDashboardIcon, BookIcon, UserRoundIcon, SettingsIcon, LogOutIcon, SearchIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { coursesService, Course, CreateCourseData } from '@/services/courses';
+import { useAuth } from '@/hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
 
 const CoursesPage = () => {
+  const navigate = useNavigate();
+  const { user, loading, logout } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddCourseModalOpen, setIsAddCourseModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -25,16 +29,10 @@ const CoursesPage = () => {
     description: '',
     difficulty_level: '',
     status: 'draft',
-    category: ''
+    category: '',
+    language_id: null
   });
   
-  // Simulated user data
-  const userData = {
-    name: 'Ana Silva',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop',
-    level: 7
-  };
-
   // Language categories
   const categories = [
     { value: 'all', label: 'Todos' },
@@ -183,6 +181,11 @@ const CoursesPage = () => {
     loadData();
   }, []);
 
+  const handleLogout = () => {
+    logout();
+    navigate('/auth');
+  };
+
   const handleAddCourse = async () => {
     try {
       setIsLoading(true);
@@ -199,7 +202,8 @@ const CoursesPage = () => {
         description: '',
         difficulty_level: '',
         status: 'draft',
-        category: ''
+        category: '',
+        language_id: null
       });
       setIsAddCourseModalOpen(false);
     } catch (error: any) {
@@ -248,17 +252,17 @@ const CoursesPage = () => {
               <div className="px-3 py-2">
                 <div className="flex items-center px-2 py-3 mb-2">
                   <img
-                    src={userData.avatar}
-                    alt={userData.name}
+                    src={user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop'}
+                    alt={user?.name || 'Usuário'}
                     className="w-10 h-10 rounded-full mr-3 border-2 border-codequest-light"
                   />
                   <div>
-                    <h3 className="font-medium text-codequest-dark">{userData.name}</h3>
+                    <h3 className="font-medium text-codequest-dark">{user?.name || 'Carregando...'}</h3>
                     <div className="flex items-center">
                       <div className="w-4 h-4 bg-codequest-purple rounded-full flex items-center justify-center text-white text-xs font-bold mr-1">
-                        {userData.level}
+                        {user?.level || 0}
                       </div>
-                      <span className="text-xs text-gray-500">Nível {userData.level}</span>
+                      <span className="text-xs text-gray-500">Nível {user?.level || 0}</span>
                     </div>
                   </div>
                 </div>
@@ -280,15 +284,14 @@ const CoursesPage = () => {
                   ))}
                 </nav>
                 
-                <div className="mt-auto pt-4">
-                  <Button
-                    variant="outline"
-                    className="w-full border-gray-200 text-gray-600 hover:bg-gray-100 hover:text-gray-900 justify-start"
-                  >
-                    <LogOutIcon className="w-4 h-4 mr-2" />
-                    Sair
-                  </Button>
-                </div>
+                <Button
+                  variant="outline"
+                  className="w-full border-gray-200 text-gray-600 hover:bg-gray-100 hover:text-gray-900 justify-start mt-4"
+                  onClick={handleLogout}
+                >
+                  <LogOutIcon className="w-4 h-4 mr-2" />
+                  Sair
+                </Button>
               </div>
             </SidebarContent>
           </Sidebar>
@@ -486,29 +489,27 @@ const CoursesPage = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                {/* Temporariamente comentado para testes
-                <div className="grid gap-2">
-                  <Label htmlFor="language">Linguagem (Opcional)</Label>
-                  <Select
-                    value={newCourse.language_id}
-                    onValueChange={(value) => setNewCourse({ ...newCourse, language_id: value })}
-                    disabled={isLoading}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione a linguagem" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {languages.map((language) => (
-                        <SelectItem key={language.id} value={language.id.toString()}>
-                          {language.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                */}
+              <div className="grid gap-2">
+                <Label htmlFor="language">Linguagem (Opcional)</Label>
+                <Select
+                  value={newCourse.language_id?.toString()}
+                  onValueChange={(value) => setNewCourse({ ...newCourse, language_id: value ? parseInt(value) : undefined })}
+                  disabled={isLoading}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a linguagem" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {languages.map((language) => (
+                      <SelectItem key={language.id} value={language.id.toString()}>
+                        {language.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
+              <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
                   <Label htmlFor="category">Categoria</Label>
                   <Select

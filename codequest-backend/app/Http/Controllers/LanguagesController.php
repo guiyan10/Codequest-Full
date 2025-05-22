@@ -13,7 +13,16 @@ class LanguagesController extends Controller
      */
     public function index()
     {
-        //
+        try {
+            $languages = languages::all();
+            return response()->json($languages);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Erro ao buscar linguagens',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**

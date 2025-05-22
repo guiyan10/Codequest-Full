@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CourseController;
+use App\Http\Controllers\LanguagesController;
 use App\Http\Controllers\QuizModelController;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -34,4 +35,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Rotas dos Cursos
     Route::apiResource('courses', CourseController::class);
+
+    // Rotas das Linguagens
+    Route::get('/languages', [LanguagesController::class, 'index']);
 });
