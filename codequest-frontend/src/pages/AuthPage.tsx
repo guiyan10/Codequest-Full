@@ -118,7 +118,7 @@ const AuthPage = () => {
       console.error(error);
       if (error.response?.data?.message) {
         toast.error({ 
-          title: 'Erro na autenticação',
+          title: 'Erro na autenticaçãoo',
           description: error.response.data.message
         });
       } else {
