@@ -32,6 +32,8 @@ export interface CreateModuleData {
   description: string;
   content: string;
   order_index: number;
+  duration: string;
+  xp: number;
 }
 
 export interface CreateQuestionData {
@@ -43,6 +45,27 @@ export interface CreateQuestionData {
     option_text: string;
     is_correct: boolean;
   }>;
+}
+
+export interface UserAnswerData {
+  question_id: number;
+  answer: string;
+}
+
+export interface AnswerResponse {
+  status: string;
+  is_correct: boolean;
+  correct_answer: string;
+  points: number;
+  user_answer: string;
+}
+
+export interface ModuleCompletionResponse {
+  status: string;
+  message: string;
+  xp_earned: number;
+  total_xp: number;
+  current_level: number;
 }
 
 export const modulesService = {
@@ -113,7 +136,7 @@ export const modulesService = {
   },
 
   // Submit quiz answer
-  submitAnswer: async (moduleId: number, questionId: number, answer: string) => {
+  submitAnswer: async (moduleId: number, questionId: number, answer: string): Promise<AnswerResponse> => {
     try {
       const response = await api.post(`/api/modules/${moduleId}/questions/${questionId}/answer`, {
         answer
@@ -126,9 +149,9 @@ export const modulesService = {
   },
 
   // Complete module
-  completeModule: async (moduleId: number) => {
+  completeModule: async (moduleId: number, answers: UserAnswerData[]): Promise<ModuleCompletionResponse> => {
     try {
-      const response = await api.post(`/api/modules/${moduleId}/complete`);
+      const response = await api.post(`/api/modules/${moduleId}/complete`, { answers });
       return response.data;
     } catch (error) {
       console.error(`Error completing module ${moduleId}:`, error);
@@ -165,6 +188,17 @@ export const modulesService = {
       return response.data;
     } catch (error) {
       console.error(`Error deleting question ${questionId}:`, error);
+      throw error;
+    }
+  },
+
+  // Get user answers for a completed module
+  getUserModuleAnswers: async (moduleId: number) => {
+    try {
+      const response = await api.get(`/api/modules/${moduleId}/answers`);
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching user answers for module ${moduleId}:`, error);
       throw error;
     }
   }

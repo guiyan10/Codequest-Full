@@ -10,25 +10,21 @@ import ProgressCard from '@/components/shared/ProgressCard';
 import { useAlertToast } from '@/components/ui/alert-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { LayoutDashboardIcon, BookIcon, UserRoundIcon, SettingsIcon, LogOutIcon, PlayIcon, AwardIcon, TrophyIcon, MedalIcon } from 'lucide-react';
+import { coursesService } from '@/services/courses';
 
 const Dashboard = () => {
   const toast = useAlertToast();
   const navigate = useNavigate();
   const { user, loading, logout } = useAuth();
   
-  // Show welcome toast on login
-  useEffect(() => {
-    if (user) {
-      setTimeout(() => {
-        toast.success({
-          title: `Bem-vindo de volta, ${user.name}!`,
-          description: 'Continue sua jornada de aprendizado.'
-        });
-      }, 1000);
-    }
-  }, [user]);
+  const [userProgress, setUserProgress] = useState({
+    total_courses: 0,
+    completed_courses_count: 0,
+    total_modules: 0,
+    completed_modules_count: 0,
+  });
+  const [isProgressLoading, setIsProgressLoading] = useState(true);
 
-  // Simulated courses/languages data
   const languages = [
     {
       id: 'javascript',
@@ -68,7 +64,6 @@ const Dashboard = () => {
     }
   ];
   
-  // Simulated badges data
   const badges = [
     { name: 'Iniciante', icon: '/badges/novice.svg', unlocked: true, description: 'Completou seu primeiro módulo' },
     { name: 'Persistente', icon: '/badges/persistent.svg', unlocked: true, description: '7 dias seguidos de estudo' },
@@ -78,14 +73,67 @@ const Dashboard = () => {
     { name: 'Pythonista', icon: '/badges/python.svg', unlocked: false, description: 'Completou todos os módulos de Python' },
   ];
 
-  // Simulated progress data
-  const progressData = [
-    { title: 'Cursos', value: 3, max: 10, icon: <BookIcon className="text-white w-5 h-5" />, color: 'bg-blue-500' },
-    { title: 'Módulos', value: 28, max: 78, icon: <PlayIcon className="text-white w-5 h-5" />, color: 'bg-purple-500' },
-    { title: 'Conquistas', value: 12, max: 30, icon: <AwardIcon className="text-white w-5 h-5" />, color: 'bg-codequest-emerald' },
+  useEffect(() => {
+    if (user) {
+      setTimeout(() => {
+        toast.success({
+          title: `Bem-vindo de volta, ${user.name}!`,
+          description: 'Continue sua jornada de aprendizado.'
+        });
+      }, 1000);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    const fetchUserProgress = async () => {
+      try {
+        setIsProgressLoading(true);
+        const data = await coursesService.getUserProgress();
+        if (data.status === 'success') {
+          setUserProgress({
+            total_courses: data.total_courses,
+            completed_courses_count: data.completed_courses_count,
+            total_modules: data.total_modules,
+            completed_modules_count: data.completed_modules_count,
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching user progress:', error);
+        // Não mostrar erro ao usuário, apenas usar os dados fictícios
+      } finally {
+        setIsProgressLoading(false);
+      }
+    };
+
+    if (user) {
+      fetchUserProgress();
+    }
+  }, [user]);
+
+  const dynamicProgressData = [
+    {
+      title: 'Cursos',
+      value: userProgress.completed_courses_count,
+      max: userProgress.total_courses,
+      icon: <BookIcon className="text-white w-5 h-5" />,
+      color: 'bg-blue-500'
+    },
+    {
+      title: 'Módulos',
+      value: userProgress.completed_modules_count,
+      max: userProgress.total_modules,
+      icon: <PlayIcon className="text-white w-5 h-5" />,
+      color: 'bg-purple-500'
+    },
+    {
+      title: 'Conquistas',
+      value: badges.filter(badge => badge.unlocked).length,
+      max: badges.length,
+      icon: <AwardIcon className="text-white w-5 h-5" />,
+      color: 'bg-codequest-emerald'
+    },
   ];
 
-  // Sidebar navigation items
   const navigationItems = [
     { name: 'Dashboard', icon: <LayoutDashboardIcon className="w-5 h-5" />, path: '/dashboard', active: true },
     { name: 'Cursos', icon: <BookIcon className="w-5 h-5" />, path: '/cursos' },
@@ -98,8 +146,15 @@ const Dashboard = () => {
     navigate('/auth');
   };
 
-  if (loading) {
-    return <div>Carregando...</div>;
+  if (loading || isProgressLoading) {
+    return (
+        <div className="min-h-screen bg-codequest-background flex items-center justify-center">
+            <div className="text-center">
+                <div className="w-16 h-16 border-4 border-codequest-purple border-t-transparent rounded-full animate-spin mx-auto"></div>
+                <p className="mt-4 text-codequest-dark font-medium">Carregando dashboard...</p>
+            </div>
+        </div>
+    );
   }
 
   if (!user) {
@@ -107,7 +162,6 @@ const Dashboard = () => {
     return null;
   }
 
-  // Handle badge click
   const handleBadgeClick = (badge: any) => {
     if (badge.unlocked) {
       toast.info({
@@ -126,7 +180,6 @@ const Dashboard = () => {
     <div className="min-h-screen bg-codequest-background">
       <SidebarProvider>
         <div className="min-h-screen flex w-full">
-          {/* Sidebar */}
           <Sidebar className="bg-white border-r border-gray-200">
             <SidebarHeader className="p-4 border-b">
               <Link to="/" className="flex items-center space-x-2">
@@ -186,9 +239,7 @@ const Dashboard = () => {
             </SidebarContent>
           </Sidebar>
 
-          {/* Main Content */}
           <div className="flex-1 flex flex-col">
-            {/* Header */}
             <header className="bg-white p-4 border-b border-gray-200 flex justify-between items-center">
               <div className="flex items-center">
                 <SidebarTrigger className="mr-4 text-codequest-dark hover:text-codequest-purple p-2 rounded-md hover:bg-gray-100">
@@ -218,24 +269,20 @@ const Dashboard = () => {
               </div>
             </header>
 
-            {/* Dashboard Content */}
             <div className="flex-1 overflow-auto p-6">
-              {/* Welcome Section */}
               <div className="mb-8">
                 <h2 className="text-2xl font-bold text-codequest-dark mb-2">Olá, {user.name}!</h2>
                 <p className="text-gray-600">Continue de onde parou e mantenha sua sequência de estudos.</p>
               </div>
 
-              {/* Stats Overview */}
               <div className="mb-8">
                 <ProfileStats stats={user} />
               </div>
 
-              {/* Progress Overview */}
               <div className="mb-8">
                 <h3 className="text-xl font-bold text-codequest-dark mb-4">Seu Progresso</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {progressData.map((item, index) => (
+                  {dynamicProgressData.map((item, index) => (
                     <ProgressCard
                       key={index}
                       title={item.title}
@@ -249,7 +296,6 @@ const Dashboard = () => {
                 </div>
               </div>
 
-              {/* Courses In Progress */}
               <div className="mb-8">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-xl font-bold text-codequest-dark">Seus Cursos</h3>
@@ -271,7 +317,6 @@ const Dashboard = () => {
                 </div>
               </div>
 
-              {/* Achievements */}
               <div>
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-xl font-bold text-codequest-dark">Suas Conquistas</h3>

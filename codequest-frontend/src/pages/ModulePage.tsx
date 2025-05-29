@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useParams, useNavigate } from 'react-router-dom';
+import { Link, useParams, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarTrigger } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
@@ -7,8 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { useAlertToast } from '@/components/ui/alert-toast';
-import { LayoutDashboardIcon, BookIcon, UserRoundIcon, SettingsIcon, LogOutIcon } from 'lucide-react';
+import { LayoutDashboardIcon, BookIcon, UserRoundIcon, SettingsIcon, LogOutIcon, CheckCircleIcon } from 'lucide-react';
 import { coursesService, Module, Question } from '@/services/courses';
+import { modulesService, AnswerResponse } from '@/services/modules';
 import { useAuth } from '@/hooks/useAuth';
 
 const ModulePage = () => {
@@ -20,38 +21,98 @@ const ModulePage = () => {
   const [loading, setLoading] = useState(true);
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [submitted, setSubmitted] = useState(false);
+  const [answerResults, setAnswerResults] = useState<Record<number, AnswerResponse>>({});
+  const [totalPoints, setTotalPoints] = useState(0);
+  const [isReviewMode, setIsReviewMode] = useState(false);
+
+  const location = useLocation();
 
   useEffect(() => {
     if (courseId && moduleId) {
-      loadModule(parseInt(courseId), parseInt(moduleId));
-    }
-  }, [courseId, moduleId]);
+      const queryParams = new URLSearchParams(location.search);
+      const mode = queryParams.get('mode');
+      const reviewMode = mode === 'review';
+      setIsReviewMode(reviewMode);
 
-  const loadModule = async (courseId: number, moduleId: number) => {
+      loadModule(parseInt(courseId), parseInt(moduleId), reviewMode);
+    }
+  }, [courseId, moduleId, location.search]);
+
+  const loadModule = async (courseId: number, moduleId: number, reviewMode: boolean) => {
     try {
-      console.log('Loading module:', { courseId, moduleId });
-      const moduleData = await coursesService.getModule(courseId, moduleId);
+      console.log('Loading module:', { courseId, moduleId, reviewMode });
+      const moduleData = await coursesService.getModuleById(courseId, moduleId);
       console.log('Module data received:', moduleData);
-      
+
       if (moduleData) {
-        // Garantir que as questões e opções estejam no formato correto
         const formattedModule = {
           ...moduleData,
-          questions: moduleData.questions?.map(question => ({
-            ...question,
-            options: question.options || []
-          })) || []
+          questions: moduleData.questions?.map(question => {
+            console.log('Question data:', question);
+            console.log('Question options:', question.options);
+            return {
+              ...question,
+              options: question.options || []
+            };
+          }) || []
         };
-        
-        console.log('Formatted module:', formattedModule);
+
+        console.log('Formatted module with questions:', formattedModule);
         setModule(formattedModule);
+
+        if (reviewMode) {
+          // Load user answers for review mode
+          const userAnswers = await modulesService.getUserModuleAnswers(moduleId);
+          console.log('User answers for review:', userAnswers);
+
+          const results: Record<number, AnswerResponse> = {};
+          let calculatedTotalPoints = 0;
+
+          userAnswers.forEach((answer: any) => {
+              const question = formattedModule.questions.find(q => q.id === answer.module_question_id);
+              if (question) {
+                  const correctOption = question.options?.find(opt => opt.is_correct);
+                  const isCorrect = correctOption?.option_text === answer.answer;
+                  results[question.id] = {
+                      status: isCorrect ? 'correct' : 'incorrect',
+                      is_correct: isCorrect,
+                      correct_answer: correctOption?.option_text || '',
+                      points: isCorrect ? question.points : 0,
+                      user_answer: answer.answer // Assuming answer has this property
+                  };
+                  if (isCorrect) {
+                      calculatedTotalPoints += question.points;
+                  }
+              }
+          });
+          setAnswerResults(results);
+          setTotalPoints(calculatedTotalPoints);
+          setSubmitted(true); // Set submitted to true in review mode
+
+        } else {
+          // Normal mode: Initialize empty answers
+          const initialAnswers: Record<number, string> = {};
+          formattedModule.questions.forEach(q => {
+              if (q.options && q.options.length > 0) {
+                  initialAnswers[q.id] = '';
+              }
+          });
+          setAnswers(initialAnswers);
+          setSubmitted(false); // Ensure not submitted in normal mode initially
+        }
       } else {
-        toast.error('Módulo não encontrado');
+        toast.error({
+          title: 'Erro',
+          description: 'Módulo não encontrado'
+        });
         navigate(`/cursos/${courseId}`);
       }
     } catch (error) {
       console.error('Error loading module:', error);
-      toast.error('Erro ao carregar módulo');
+      toast.error({
+        title: 'Erro',
+        description: 'Erro ao carregar módulo'
+      });
       navigate(`/cursos/${courseId}`);
     } finally {
       setLoading(false);
@@ -69,24 +130,63 @@ const ModulePage = () => {
     if (!module) return;
 
     try {
-      let correctAnswers = 0;
+      let totalPointsEarned = 0;
+      const answersToSubmit: { question_id: number; answer: string }[] = [];
+
       for (const question of module.questions) {
-        const correctOption = question.options.find(option => option.is_correct);
-        if (correctOption && answers[question.id] === correctOption.option_text) {
-          correctAnswers++;
+        const answer = answers[question.id];
+        if (answer === undefined || answer === null || answer === '') {
+          toast.error({
+            title: 'Erro',
+            description: 'Por favor, responda todas as questões'
+          });
+          return;
+        }
+
+        answersToSubmit.push({
+            question_id: question.id,
+            answer: answer
+        });
+
+        const correctOption = question.options?.find(opt => opt.is_correct);
+        if (correctOption && answer === correctOption.option_text) {
+            totalPointsEarned += question.points;
         }
       }
 
-      const score = (correctAnswers / module.questions.length) * 100;
+      setTotalPoints(totalPointsEarned);
+      setSubmitted(true);
+
+      const totalPossiblePoints = module.questions.reduce((sum, q) => sum + q.points, 0);
+      const score = (totalPointsEarned / totalPossiblePoints) * 100;
+
       if (score >= 70) {
-        await coursesService.completeModule(module.id);
-        toast.success('Parabéns! Você completou o módulo!');
-        navigate(`/cursos/${courseId}`);
+        try {
+          const completionResult = await modulesService.completeModule(module.id, answersToSubmit);
+          toast.success({
+            title: 'Sucesso',
+            description: `Parabéns! Você completou o módulo e ganhou ${completionResult.xp_earned} XP!`
+          });
+          navigate(`/cursos/${courseId}`);
+        } catch (error) {
+          console.error('Error completing module:', error);
+          toast.error({
+            title: 'Erro',
+            description: 'Erro ao completar módulo'
+          });
+        }
       } else {
-        toast.error('Você precisa acertar pelo menos 70% das questões para completar o módulo.');
+        toast.error({
+          title: 'Erro',
+          description: 'Você precisa acertar pelo menos 70% das questões para completar o módulo.'
+        });
       }
     } catch (error) {
-      toast.error('Erro ao enviar respostas');
+      console.error('Error submitting answers:', error);
+      toast.error({
+        title: 'Erro',
+        description: 'Erro ao enviar respostas'
+      });
     }
   };
 
@@ -103,7 +203,7 @@ const ModulePage = () => {
       <div className="min-h-screen bg-codequest-background flex items-center justify-center">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-codequest-purple border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="mt-4 text-codequest-dark font-medium">Carregando módulo...</p>
+          <p className="mt-4 text-codequest-dark font-medium">{isReviewMode ? 'Carregando respostas...' : 'Carregando módulo...'}</p>
         </div>
       </div>
     );
@@ -196,63 +296,135 @@ const ModulePage = () => {
                       <span className="text-gray-500">XP: {module.xp}</span>
                     </div>
                   </div>
+                  {isReviewMode && submitted && ( // Show score only in review mode after submission
+                    <div className="text-right">
+                      <p className={`text-xl font-bold ${totalPoints >= module.questions.reduce((sum, q) => sum + q.points, 0) * 0.7 ? 'text-green-600' : 'text-red-600'}`}>
+                        {totalPoints} / {module.questions.reduce((sum, q) => sum + q.points, 0)} XP
+                      </p>
+                      <p className="text-sm text-gray-500">Pontuação</p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
 
             {/* Module Content */}
             <div className="container mx-auto px-4 py-8">
-              <div className="bg-white rounded-xl p-6 shadow-sm mb-8">
-                <div className="prose max-w-none">
-                  <p className="text-gray-600 mb-6">{module.description}</p>
-                </div>
+              <div className="prose max-w-none mb-8">
+                {/* Render module content HTML safely */}
+                <div dangerouslySetInnerHTML={{ __html: module.content }} />
               </div>
 
               {/* Questions */}
               <div className="space-y-6">
-                {module.questions && module.questions.length > 0 ? (
-                  module.questions.map((question, index) => (
-                    <Card key={question.id}>
+                {module.questions.map((question, index) => {
+                  const isCorrect = submitted && answerResults[question.id]?.is_correct;
+                  const userAnswer = submitted ? answerResults[question.id]?.user_answer : answers[question.id];
+
+                  return (
+                    <Card key={question.id} className={submitted ? (isCorrect ? 'border-green-500' : 'border-red-500') : ''}>
                       <CardHeader>
-                        <CardTitle className="text-lg">
+                        <CardTitle className="text-lg font-semibold text-codequest-dark flex items-center">
                           Questão {index + 1}
+                          {submitted && ( // Show check or cross icon after submission
+                            isCorrect ? (
+                              <CheckCircleIcon className="ml-2 w-5 h-5 text-green-500" />
+                            ) : (
+                              <svg xmlns="http://www.w3.org/2000/svg" className="ml-2 w-5 h-5 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                              </svg>
+                            )
+                          )}
                         </CardTitle>
                       </CardHeader>
                       <CardContent>
                         <p className="text-gray-700 mb-4">{question.question_text}</p>
-                        <RadioGroup
-                          value={answers[question.id]}
-                          onValueChange={(value) => handleAnswerChange(question.id, value)}
-                          disabled={submitted}
-                        >
-                          {question.options && question.options.map((option) => (
-                            <div key={option.id} className="flex items-center space-x-2">
-                              <RadioGroupItem value={option.option_text} id={`option-${option.id}`} />
-                              <Label htmlFor={`option-${option.id}`}>{option.option_text}</Label>
-                            </div>
-                          ))}
-                        </RadioGroup>
+
+                        {question.question_type === 'multiple_choice' && (
+                          <div role="radiogroup" className="space-y-2 block">
+                            {question.options && question.options.length > 0 ? (
+                              question.options.map(option => {
+                                const isChecked = isReviewMode 
+                                  ? answerResults[question.id]?.correct_answer === option.option_text 
+                                  : answers[question.id] === option.option_text;
+                                const isCorrect = submitted && answerResults[question.id]?.is_correct && option.is_correct;
+                                const isUserAnswerIncorrect = submitted && !answerResults[question.id]?.is_correct && answerResults[question.id]?.user_answer === option.option_text;
+
+                                return (
+                                  <div key={option.id} className={`flex items-center space-x-2 p-2 rounded-md cursor-pointer min-h-[30px] ${isReviewMode ? '' : 'hover:bg-gray-50'}`}>
+                                    <input
+                                      type="radio"
+                                      id={`question-${question.id}-option-${option.id}`}
+                                      name={`question-${question.id}`}
+                                      value={option.option_text}
+                                      checked={isChecked}
+                                      onChange={(e) => handleAnswerChange(question.id, e.target.value)}
+                                      disabled={isReviewMode}
+                                      className="border-gray-300 w-4 h-4 text-codequest-purple focus:ring-codequest-purple"
+                                      style={{ display: 'block' }}
+                                    />
+                                    <label
+                                      htmlFor={`question-${question.id}-option-${option.id}`}
+                                      className={`flex-1 cursor-pointer text-gray-700 ${
+                                        isReviewMode
+                                          ? option.is_correct ? 'text-green-600 font-semibold' : ''
+                                          : submitted
+                                            ? isCorrect
+                                              ? 'text-green-600 font-semibold'
+                                              : isUserAnswerIncorrect
+                                                ? 'text-red-600'
+                                                : ''
+                                            : ''
+                                      }`}
+                                      style={{ display: 'block' }}
+                                    >
+                                      {option.option_text}
+                                    </label>
+                                  </div>
+                                );
+                              })
+                            ) : (
+                              <p className="text-gray-500 italic">Nenhuma opção disponível</p>
+                            )}
+                          </div>
+                        )}
+
+                        {isReviewMode && question.explanation && (
+                          <div className="mt-4 p-4 bg-gray-100 rounded-md text-gray-700 text-sm">
+                            <h4 className="font-semibold mb-2">Explicação:</h4>
+                            <p>{question.explanation}</p>
+                          </div>
+                        )}
                       </CardContent>
                     </Card>
-                  ))
-                ) : (
-                  <div className="text-center py-8">
-                    <p className="text-gray-500">Este módulo ainda não possui questões.</p>
-                  </div>
-                )}
-
-                {module.questions && module.questions.length > 0 && (
-                  <div className="flex justify-end mt-6">
-                    <Button
-                      onClick={handleSubmit}
-                      disabled={submitted}
-                      className="bg-codequest-purple hover:bg-codequest-purple/90 text-white"
-                    >
-                      Enviar Respostas
-                    </Button>
-                  </div>
-                )}
+                  );
+                })}
               </div>
+
+              {!isReviewMode && ( // Only show submit button if not in review mode
+                <div className="mt-8 flex justify-end">
+                  <Button
+                    onClick={handleSubmit}
+                    disabled={submitted}
+                    className="bg-codequest-purple hover:bg-codequest-purple/90 text-white"
+                  >
+                    {submitted ? 'Respostas Enviadas' : 'Enviar Respostas'}
+                  </Button>
+                </div>
+              )}
+
+              {isReviewMode && submitted && ( // Show score summary only in review mode after submission
+                 <div className="mt-8 bg-white rounded-lg p-6 shadow-sm">
+                  <h3 className="text-xl font-bold text-codequest-dark mb-4">Resultado</h3>
+                  <p className="text-gray-600">
+                      Você acertou {Object.values(answerResults).filter(r => r.is_correct).length} de {module.questions.length} questões.
+                  </p>
+                  <p className="text-gray-600">
+                      Pontos obtidos: {totalPoints} de {module.questions.reduce((sum, q) => sum + q.points, 0)}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -261,4 +433,4 @@ const ModulePage = () => {
   );
 };
 
-export default ModulePage; 
+export default ModulePage;

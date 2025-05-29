@@ -18,6 +18,8 @@ return new class extends Migration
             $table->text('description');
             $table->text('content');
             $table->unsignedInteger('order_index');
+            $table->string('duration');
+            $table->unsignedInteger('xp');
             $table->json('questions')->nullable();
             $table->timestamps();
         });
@@ -30,4 +32,4 @@ return new class extends Migration
     {
         Schema::dropIfExists('modules');
     }
-};
+}; 

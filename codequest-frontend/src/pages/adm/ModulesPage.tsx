@@ -27,8 +27,10 @@ export default function ModulesPage() {
     title: '',
     description: '',
     content: '',
-    order: 0,
+    order_index: 0,
     course_id: 0,
+    duration: '',
+    xp: 0,
     questions: []
   });
 
@@ -79,8 +81,10 @@ export default function ModulesPage() {
         title: '',
         description: '',
         content: '',
-        order: 0,
+        order_index: 0,
         course_id: 0,
+        duration: '',
+        xp: 0,
         questions: []
       });
       loadModules();
@@ -330,8 +334,27 @@ export default function ModulesPage() {
                 <Input
                   id="order"
                   type="number"
-                  value={newModule.order}
-                  onChange={(e) => setNewModule({ ...newModule, order: parseInt(e.target.value) })}
+                  value={newModule.order_index}
+                  onChange={(e) => setNewModule({ ...newModule, order_index: parseInt(e.target.value) })}
+                />
+              </div>
+              <div>
+                <Label htmlFor="duration">Duração</Label>
+                <Input
+                  id="duration"
+                  value={newModule.duration}
+                  onChange={(e) => setNewModule({ ...newModule, duration: e.target.value })}
+                  placeholder="Ex: 2 horas"
+                />
+              </div>
+              <div>
+                <Label htmlFor="xp">XP</Label>
+                <Input
+                  id="xp"
+                  type="number"
+                  value={newModule.xp}
+                  onChange={(e) => setNewModule({ ...newModule, xp: parseInt(e.target.value) })}
+                  placeholder="Pontos de experiência"
                 />
               </div>
             </div>

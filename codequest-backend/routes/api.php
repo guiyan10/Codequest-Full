@@ -6,6 +6,7 @@ use App\Http\Controllers\LanguagesController;
 use App\Http\Controllers\QuizModelController;
 use App\Http\Controllers\ModulesController;
 use App\Http\Controllers\ModuleQuestionController;
+use App\Http\Controllers\ModuleAnswerController;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -37,6 +38,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Rotas dos Cursos
     Route::prefix('courses')->group(function () {
+        Route::get('/user-progress', [CourseController::class, 'getUserProgress']);
         Route::get('/', [CourseController::class, 'index']);
         Route::post('/', [CourseController::class, 'store']);
         Route::get('/{course}', [CourseController::class, 'show']);
@@ -61,5 +63,14 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/{module}/questions', [ModuleQuestionController::class, 'store']);
         Route::put('/{module}/questions/{question}', [ModuleQuestionController::class, 'update']);
         Route::delete('/{module}/questions/{question}', [ModuleQuestionController::class, 'destroy']);
+
+        // Module answers routes
+        Route::post('/{module}/questions/{question}/answer', [ModuleAnswerController::class, 'submitAnswer']);
+
+        // Module completion route
+        Route::post('/{module}/complete', [ModulesController::class, 'complete']);
+
+        // Get user answers for a completed module
+        Route::get('/{module}/answers', [ModulesController::class, 'getUserAnswers']);
     });
 });

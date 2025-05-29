@@ -12,6 +12,7 @@ interface ModuleCardProps {
   status: 'locked' | 'in-progress' | 'completed';
   xp: number;
   index: number;
+  is_completed: boolean;
 }
 
 const ModuleCard: React.FC<ModuleCardProps> = ({
@@ -23,6 +24,7 @@ const ModuleCard: React.FC<ModuleCardProps> = ({
   status,
   xp,
   index,
+  is_completed,
 }) => {
   const getStatusIcon = () => {
     switch (status) {
@@ -90,7 +92,7 @@ const ModuleCard: React.FC<ModuleCardProps> = ({
       <div className="mt-4 flex justify-between items-center">
         {status !== 'locked' && (
           <Link
-            to={`/cursos/${courseId}/modulo/${id}`}
+            to={status === 'completed' ? `/cursos/${courseId}/modulo/${id}?mode=review` : `/cursos/${courseId}/modulo/${id}`}
             className="text-codequest-purple hover:text-codequest-dark font-medium text-sm"
           >
             {status === 'completed' ? 'Revisar módulo' : 'Continuar módulo'} →

@@ -6,6 +6,8 @@ use App\Models\Course;
 use App\Models\Modules;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Auth;
+use App\Models\User;
 
 class CourseController extends Controller
 {
@@ -15,12 +17,93 @@ class CourseController extends Controller
     public function index()
     {
         try {
-            $courses = Course::with('language')->get();
+            $user = Auth::user();
+
+            $courses = Course::with(['language', 'modules'])->get();
+
+            $courses = $courses->map(function ($course) use ($user) {
+                /** @var \App\Models\User|null $user */
+                $totalModules = $course->modules->count();
+                $completedModulesCount = 0;
+
+                if ($user) {
+                    // Eager load completedModules relation for the user if not already loaded
+                    if (!$user->relationLoaded('completedModules')) {
+                        $user->load('completedModules');
+                    }
+                    // Count completed modules for this specific course
+                    $completedModulesCount = $user->completedModules->whereIn('module_id', $course->modules->pluck('id'))->count();
+                }
+
+                $course->total_modules = $totalModules;
+                $course->completed_modules_count = $completedModulesCount;
+                $course->progress_percentage = $totalModules > 0 ? round(($completedModulesCount / $totalModules) * 100) : 0;
+                
+                // Keep the modules relationship for progress calculation
+                return $course;
+            });
+
             return response()->json($courses);
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Erro ao buscar cursos',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get the user's course and module progress.
+     */
+    public function getUserProgress()
+    {
+        try {
+            /** @var \App\Models\User|null $user */
+            $user = Auth::user();
+
+            if (!$user) {
+                return response()->json(['message' => 'Não autenticado'], 401);
+            }
+
+            // Load completedModules relationship for the user
+            $user->load('completedModules');
+
+            $totalCourses = Course::count();
+            $completedCoursesCount = 0;
+            $totalModules = Modules::count();
+            $completedModulesCount = $user->completedModules->count();
+
+            // Calculate completed courses (assuming a course is completed if all its modules are completed)
+            $courses = Course::with('modules')->get();
+            foreach ($courses as $course) {
+                $allModulesCompleted = true;
+                if ($course->modules->isEmpty()) {
+                    $allModulesCompleted = false; // Consider a course with no modules not completable yet
+                } else {
+                    foreach ($course->modules as $module) {
+                        if (!$user->completedModules->contains('module_id', $module->id)) {
+                            $allModulesCompleted = false;
+                            break;
+                        }
+                    }
+                }
+                if ($allModulesCompleted && !$course->modules->isEmpty()) { // Only count if has modules
+                    $completedCoursesCount++;
+                }
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'total_courses' => $totalCourses,
+                'completed_courses_count' => $completedCoursesCount,
+                'total_modules' => $totalModules,
+                'completed_modules_count' => $completedModulesCount
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Erro ao buscar progresso do usuário',
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -171,50 +254,47 @@ class CourseController extends Controller
     }
 
     /**
-     * Get all modules for a specific course.
+     * Get modules for a specific course.
      */
     public function getModules(Course $course)
     {
-        try {
-            $modules = $course->modules()
-                ->with(['questions.options'])
-                ->orderBy('order_index')
-                ->get();
-            return response()->json($modules);
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Erro ao buscar módulos do curso',
-                'error' => $e->getMessage()
-            ], 500);
-        }
+        $user = Auth::user();
+
+        $modules = $course->modules()->with(['questions.options'])->get();
+
+        // Add completion status for the authenticated user
+        $modules = $modules->map(function ($module) use ($user) {
+            $isCompleted = false;
+            if ($user) {
+                // Check directly if a completedModules record exists for this module
+                $completedModule = $user->completedModules->firstWhere('module_id', $module->id);
+                $isCompleted = (bool) $completedModule;
+            }
+            $module->is_completed = $isCompleted;
+            return $module;
+        });
+
+        return response()->json($modules);
     }
 
     /**
-     * Get a specific module from a course.
+     * Get a single module for a specific course.
      */
     public function getModule(Course $course, Modules $module)
     {
-        try {
-            if ($module->course_id !== $course->id) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Módulo não pertence ao curso'
-                ], 404);
-            }
-
-            \Log::info('Loading module:', ['module_id' => $module->id]);
-            $module->load(['questions.options']);
-            \Log::info('Module loaded:', ['module' => $module->toArray()]);
-            
-            return response()->json($module);
-        } catch (\Exception $e) {
-            \Log::error('Error loading module:', ['error' => $e->getMessage()]);
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Erro ao buscar módulo',
-                'error' => $e->getMessage()
-            ], 500);
+        // Ensure the module belongs to the course
+        if ($module->course_id !== $course->id) {
+            return response()->json(['message' => 'Module not found in this course'], 404);
         }
+
+        return response()->json($module->load(['questions.options']));
+    }
+
+    /**
+     * Get user answers for a completed module.
+     */
+    public function getUserAnswers(Modules $module)
+    {
+        // ... existing code ...
     }
 } 

@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use App\Models\CompletedModule;
 
 class User extends Authenticatable
 {
@@ -61,4 +62,20 @@ class User extends Authenticatable
         'xp' => 0,
         'nivel' => 'user',
     ];
+
+    /**
+     * Get the modules completed by the user.
+     */
+    public function completedModules()
+    {
+        return $this->hasMany(CompletedModule::class);
+    }
+
+    /**
+     * Check if the user has completed a specific module.
+     */
+    public function hasCompletedModule($moduleId)
+    {
+        return $this->completedModules()->where('module_id', $moduleId)->exists();
+    }
 }

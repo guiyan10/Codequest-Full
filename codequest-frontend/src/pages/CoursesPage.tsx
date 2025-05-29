@@ -8,6 +8,7 @@ import LanguageCard, { LanguageCardProps } from '@/components/shared/LanguageCar
 import { Input } from '@/components/ui/input';
 import { LayoutDashboardIcon, BookIcon, UserRoundIcon, SettingsIcon, LogOutIcon, SearchIcon } from 'lucide-react';
 import { coursesService, Course } from '@/services/courses';
+import { useAuth } from '@/hooks/useAuth';
 
 const CoursesPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -15,12 +16,7 @@ const CoursesPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
-  // Simulated user data
-  const userData = {
-    name: 'Ana Silva',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop',
-    level: 7
-  };
+  const { user, logout } = useAuth();
 
   // Language categories
   const categories = [
@@ -81,23 +77,23 @@ const CoursesPage = () => {
         mappedStatus = 'archived';
         break;
       case 'draft':
-      default: // Should only be 'draft' based on backend type, but include default for safety
+      default:
         mappedStatus = 'draft';
         break;
     }
 
-    return ({
+    return {
       id: course.id.toString(),
       name: course.title,
-      icon: `/icons/${course.category}.svg`,
+      icon: course.language?.icon || `/icons/${course.category}.svg`,
       description: course.description,
       color: `border-${getCategoryColor(course.category)}`,
-      modules: 0, // TODO: Add modules count when available
-      progress: 0, // TODO: Add progress when available
+      modules: course.total_modules || 0,
+      progress: course.progress_percentage || 0,
       category: course.category,
       difficulty: course.difficulty_level,
       status: mappedStatus,
-    });
+    };
   };
 
   // Helper function to get color based on category
@@ -166,17 +162,17 @@ const CoursesPage = () => {
               <div className="px-3 py-2">
                 <div className="flex items-center px-2 py-3 mb-2">
                   <img
-                    src={userData.avatar}
-                    alt={userData.name}
+                    src={user?.avatar || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(user?.name || '')}
+                    alt={user?.name || 'Usuário'}
                     className="w-10 h-10 rounded-full mr-3 border-2 border-codequest-light"
                   />
                   <div>
-                    <h3 className="font-medium text-codequest-dark">{userData.name}</h3>
+                    <h3 className="font-medium text-codequest-dark">{user?.name || 'Carregando...'}</h3>
                     <div className="flex items-center">
                       <div className="w-4 h-4 bg-codequest-purple rounded-full flex items-center justify-center text-white text-xs font-bold mr-1">
-                        {userData.level}
+                        {user?.level || 0}
                       </div>
-                      <span className="text-xs text-gray-500">Nível {userData.level}</span>
+                      <span className="text-xs text-gray-500">Nível {user?.level || 0}</span>
                     </div>
                   </div>
                 </div>
@@ -202,6 +198,7 @@ const CoursesPage = () => {
                   <Button
                     variant="outline"
                     className="w-full border-gray-200 text-gray-600 hover:bg-gray-100 hover:text-gray-900 justify-start"
+                    onClick={() => logout()}
                   >
                     <LogOutIcon className="w-4 h-4 mr-2" />
                     Sair

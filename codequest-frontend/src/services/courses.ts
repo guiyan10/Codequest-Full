@@ -1,4 +1,5 @@
 import api from './api';
+import { User } from '@/hooks/useAuth';
 
 export interface Module {
   id: number;
@@ -7,18 +8,24 @@ export interface Module {
   content: string;
   order_index: number;
   course_id: number;
+  duration: string;
+  xp: number;
   questions: Array<{
     id: number;
     question_text: string;
     question_type: string;
     points: number;
     order_index: number;
+    explanation?: string;
     options: Array<{
       id: number;
       option_text: string;
       is_correct: boolean;
     }>;
   }>;
+  is_completed?: boolean;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface Course {
@@ -37,6 +44,9 @@ export interface Course {
     name: string;
     icon: string;
   };
+  total_modules?: number;
+  completed_modules_count?: number;
+  progress_percentage?: number;
 }
 
 export interface Question {
@@ -46,6 +56,7 @@ export interface Question {
   points: number;
   order_index: number;
   module_id: number;
+  explanation?: string;
   options: Array<{
     id: number;
     option_text: string;
@@ -69,9 +80,34 @@ export interface CreateCourseData {
   category: string;
 }
 
+export interface CreateModuleData {
+  // ... existing code ...
+}
+
+export interface Language {
+  id: string;
+  name: string;
+  icon: string;
+  description: string;
+  color: string;
+  modules: number; // Total modules
+  progress: number; // Progress percentage
+  category: string;
+  difficulty: string;
+  status: 'draft' | 'published' | 'archived';
+}
+
+// Interface for user progress data
+export interface UserProgressData {
+  total_courses: number;
+  completed_courses_count: number;
+  total_modules: number;
+  completed_modules_count: number;
+}
+
 export const coursesService = {
   // Get all courses
-  getAll: async () => {
+  getAll: async (): Promise<Course[]> => {
     try {
       const response = await api.get('/api/courses');
       return response.data;
@@ -81,35 +117,46 @@ export const coursesService = {
     }
   },
 
-  // Get a single course
-  getOne: async (id: number) => {
+  // Get a specific course by ID
+  getById: async (id: number): Promise<Course> => {
     try {
       const response = await api.get(`/api/courses/${id}`);
       return response.data;
     } catch (error) {
-      console.error(`Error fetching course ${id}:`, error);
+      console.error(`Error fetching course with ID ${id}:`, error);
       throw error;
     }
   },
 
-  // Get course modules
-  getModules: async (courseId: number) => {
+  // Get modules for a specific course
+  getModulesByCourseId: async (courseId: number): Promise<any[]> => { // TODO: Define Module interface
     try {
       const response = await api.get(`/api/courses/${courseId}/modules`);
       return response.data;
     } catch (error) {
-      console.error(`Error fetching modules for course ${courseId}:`, error);
+      console.error(`Error fetching modules for course ID ${courseId}:`, error);
       throw error;
     }
   },
 
-  // Get a specific module
-  getModule: async (courseId: number, moduleId: number) => {
+  // Get a specific module by course ID and module ID
+  getModuleById: async (courseId: number, moduleId: number): Promise<any> => { // TODO: Define Module interface
     try {
       const response = await api.get(`/api/courses/${courseId}/modules/${moduleId}`);
       return response.data;
     } catch (error) {
-      console.error('Error fetching module:', error);
+      console.error(`Error fetching module ${moduleId} for course ID ${courseId}:`, error);
+      throw error;
+    }
+  },
+
+  // New function to get user progress
+  getUserProgress: async (): Promise<UserProgressData> => {
+    try {
+      const response = await api.get('/api/courses/user-progress');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching user progress:', error);
       throw error;
     }
   },

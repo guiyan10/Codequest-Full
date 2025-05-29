@@ -29,13 +29,16 @@ const CourseDetailPage = () => {
   const loadCourse = async (courseId: number) => {
     try {
       const [courseData, modulesData] = await Promise.all([
-        coursesService.getOne(courseId),
-        coursesService.getModules(courseId)
+        coursesService.getById(courseId),
+        coursesService.getModulesByCourseId(courseId)
       ]);
       setCourse(courseData);
       setModules(modulesData);
     } catch (error) {
-      toast.error('Erro ao carregar curso');
+      toast.error({
+        title: 'Erro',
+        description: 'Erro ao carregar curso'
+      });
     } finally {
       setLoading(false);
     }
@@ -180,19 +183,33 @@ const CourseDetailPage = () => {
 
                 <TabsContent value="modules" className="pt-6">
                   <div className="grid gap-6">
-                    {modules.map((module, index) => (
-                      <ModuleCard
-                        key={module.id}
-                        id={module.id}
-                        title={module.title}
-                        description={module.description}
-                        duration={module.duration}
-                        courseId={course.id}
-                        status={module.status}
-                        xp={module.xp}
-                        index={index}
-                      />
-                    ))}
+                    {modules
+                      .sort((a, b) => a.order_index - b.order_index)
+                      .map((module, index, sortedModules) => {
+                        let status: 'locked' | 'in-progress' | 'completed' = 'locked';
+                        const previousModule = sortedModules[index - 1];
+
+                        if (module.is_completed) {
+                          status = 'completed';
+                        } else if (index === 0 || (previousModule && previousModule.is_completed)) {
+                          status = 'in-progress';
+                        }
+
+                        return (
+                          <ModuleCard
+                            key={module.id}
+                            id={module.id}
+                            title={module.title}
+                            description={module.description}
+                            duration={module.duration}
+                            courseId={course.id}
+                            status={status}
+                            xp={module.xp}
+                            index={index}
+                            is_completed={module.is_completed || false}
+                          />
+                        );
+                      })}
                   </div>
                 </TabsContent>
 

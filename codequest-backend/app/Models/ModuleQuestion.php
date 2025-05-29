@@ -16,7 +16,8 @@ class ModuleQuestion extends Model
         'question_text',
         'question_type',
         'points',
-        'order_index'
+        'order_index',
+        'explanation',
     ];
 
     public function module(): BelongsTo
