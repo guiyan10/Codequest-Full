@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Course;
+use App\Models\Modules;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -34,7 +35,7 @@ class CourseController extends Controller
             'title' => 'required|string|max:255',
             'description' => 'required|string',
             'difficulty_level' => 'required|in:easy,medium,hard',
-            'status' => 'required|in:draft,published,archived',
+            'status' => 'required|in:draft,active,inactive',
             'language_id' => 'nullable|exists:languages,id',
             'category' => 'required|in:frontend,backend,database,mobile',
         ], [
@@ -110,7 +111,7 @@ class CourseController extends Controller
             'title' => 'sometimes|required|string|max:255',
             'description' => 'sometimes|required|string',
             'difficulty_level' => 'sometimes|required|in:easy,medium,hard',
-            'status' => 'sometimes|required|in:draft,published,archived',
+            'status' => 'sometimes|required|in:draft,active,inactive',
             'language_id' => 'nullable|exists:languages,id',
             'category' => 'sometimes|required|in:frontend,backend,database,mobile',
         ]);
@@ -164,6 +165,54 @@ class CourseController extends Controller
             return response()->json([
                 'status' => 'error',
                 'message' => 'Erro ao excluir curso',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get all modules for a specific course.
+     */
+    public function getModules(Course $course)
+    {
+        try {
+            $modules = $course->modules()
+                ->with(['questions.options'])
+                ->orderBy('order_index')
+                ->get();
+            return response()->json($modules);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Erro ao buscar módulos do curso',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get a specific module from a course.
+     */
+    public function getModule(Course $course, Modules $module)
+    {
+        try {
+            if ($module->course_id !== $course->id) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Módulo não pertence ao curso'
+                ], 404);
+            }
+
+            \Log::info('Loading module:', ['module_id' => $module->id]);
+            $module->load(['questions.options']);
+            \Log::info('Module loaded:', ['module' => $module->toArray()]);
+            
+            return response()->json($module);
+        } catch (\Exception $e) {
+            \Log::error('Error loading module:', ['error' => $e->getMessage()]);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Erro ao buscar módulo',
                 'error' => $e->getMessage()
             ], 500);
         }

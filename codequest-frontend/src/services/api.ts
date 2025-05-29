@@ -3,9 +3,10 @@ import { toast } from 'sonner';
 
 // Create an Axios instance with custom configuration
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000',
+  baseURL: 'http://localhost:8000',
   headers: {
     'Content-Type': 'application/json',
+    'Accept': 'application/json'
   },
 });
 
@@ -78,10 +79,10 @@ export const authAPI = {
     api.post('/api/register', { name, email, password }),
   
   forgotPassword: (email: string) => 
-    api.post('/auth/forgot-password', { email }),
+    api.post('/api/forgot-password', { email }),
   
   resetPassword: (token: string, email: string, password: string, password_confirmation: string) => 
-    api.post('/auth/reset-password', { token, email, password, password_confirmation }),
+    api.post('/api/reset-password', { token, email, password, password_confirmation }),
   
   logout: () => {
     localStorage.removeItem('token');

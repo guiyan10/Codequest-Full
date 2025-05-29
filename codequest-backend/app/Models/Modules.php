@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Modules extends Model
 {
@@ -14,11 +16,19 @@ class Modules extends Model
         'course_id',
         'title',
         'description',
-        'order_index'
+        'content',
+        'order_index',
+        'duration',
+        'xp'
     ];
 
-    public function course()
+    public function course(): BelongsTo
     {
         return $this->belongsTo(Course::class);
+    }
+
+    public function questions(): HasMany
+    {
+        return $this->hasMany(ModuleQuestion::class, 'module_id')->orderBy('order_index');
     }
 }

@@ -5,7 +5,7 @@ interface User {
   id: number;
   name: string;
   email: string;
-  avatar?: string;
+  avatar: string | null;
   level: number;
   xp: number;
   nivel: 'admin' | 'user';
@@ -35,11 +35,20 @@ export const useAuth = () => {
   }, []);
 
   const login = async (email: string, password: string) => {
-    const response = await authAPI.login(email, password);
-    const { token, user } = response.data;
-    localStorage.setItem('token', token);
-    setUser(user);
-    return response;
+    try {
+      const response = await authAPI.login(email, password);
+      const { token, user } = response.data;
+      
+      if (token) {
+        localStorage.setItem('token', token);
+        setUser(user);
+      }
+      
+      return response;
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
+    }
   };
 
   const logout = () => {

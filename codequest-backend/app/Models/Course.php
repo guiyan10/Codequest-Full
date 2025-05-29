@@ -33,4 +33,12 @@ class Course extends Model
     {
         return $this->belongsTo(Language::class);
     }
+
+    /**
+     * Get the modules for the course.
+     */
+    public function modules()
+    {
+        return $this->hasMany(Modules::class);
+    }
 } 
