@@ -29,16 +29,16 @@ const Dashboard = () => {
     {
       id: 'javascript',
       name: 'JavaScript',
-      icon: '/javascript.svg',
+      icon: '/js.png',
       description: 'Aprenda a linguagem que move a web.',
       color: 'border-yellow-400',
-      modules: 24,
+      modules: 50,
       progress: 45
     },
     {
       id: 'python',
       name: 'Python',
-      icon: '/python.svg',
+      icon: '/Python.png',
       description: 'Desenvolva aplicações com uma das linguagens mais versáteis.',
       color: 'border-blue-500',
       modules: 20,
@@ -47,7 +47,7 @@ const Dashboard = () => {
     {
       id: 'html-css',
       name: 'HTML & CSS',
-      icon: '/html-css.svg',
+      icon: '/html.png',
       description: 'Crie websites responsivos e estilizados.',
       color: 'border-orange-500',
       modules: 18,
@@ -56,7 +56,7 @@ const Dashboard = () => {
     {
       id: 'mysql',
       name: 'MySQL',
-      icon: '/mysql.svg',
+      icon: '/mysql.png',
       description: 'Gerencie bancos de dados relacionais.',
       color: 'border-blue-700',
       modules: 16,
@@ -65,12 +65,12 @@ const Dashboard = () => {
   ];
   
   const badges = [
-    { name: 'Iniciante', icon: '/badges/novice.svg', unlocked: true, description: 'Completou seu primeiro módulo' },
-    { name: 'Persistente', icon: '/badges/persistent.svg', unlocked: true, description: '7 dias seguidos de estudo' },
-    { name: 'JavaScript', icon: '/badges/js.svg', unlocked: true, description: 'Completou o curso básico de JavaScript' },
-    { name: 'Bug Hunter', icon: '/badges/bug.svg', unlocked: true, description: 'Corrigiu 10 bugs em desafios' },
-    { name: 'HTML Mestre', icon: '/badges/html.svg', unlocked: false, description: 'Completou o curso avançado de HTML' },
-    { name: 'Pythonista', icon: '/badges/python.svg', unlocked: false, description: 'Completou todos os módulos de Python' },
+    { name: 'Iniciante', icon: '/iniciante.png', unlocked: true, description: 'Completou seu primeiro módulo' },
+    { name: 'Persistente', icon: '/Persistente.png', unlocked: true, description: '7 dias seguidos de estudo' },
+    { name: 'JavaScript', icon: '/js.png', unlocked: true, description: 'Completou o curso básico de JavaScript' },
+    { name: 'Bug Hunter', icon: '/bughunter.png', unlocked: true, description: 'Corrigiu 10 bugs em desafios' },
+    { name: 'HTML Mestre', icon: '/mestre.png', unlocked: false, description: 'Completou o curso avançado de HTML' },
+    { name: 'Pythonista', icon: '/Python.png', unlocked: false, description: 'Completou todos os módulos de Python' },
   ];
 
   useEffect(() => {

@@ -31,12 +31,12 @@ const Index = () => {
 
   // Programming languages
   const languages = [
-    { name: 'JavaScript', icon: '/javascript.svg' },
-    { name: 'Python', icon: '/python.svg' },
-    { name: 'HTML & CSS', icon: '/html-css.svg' },
-    { name: 'MySQL', icon: '/mysql.svg' },
-    { name: 'PHP', icon: '/php.svg' },
-    { name: 'Java', icon: '/java.svg' },
+    { name: 'JavaScript', icon: '/js.png' },
+    { name: 'Python', icon: '/Python.png' },
+    { name: 'HTML & CSS', icon: '/html.png' },
+    { name: 'MySQL', icon: '/mysql.png' },
+    { name: 'PHP', icon: '/php.png' },
+    { name: 'Java', icon: '/java.png' },
   ];
 
   // Features
