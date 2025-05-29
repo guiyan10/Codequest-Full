@@ -113,7 +113,7 @@ const Index = () => {
                   Aprenda a programar como em um <span className="gradient-text">jogo</span>
                 </h1>
                 <p className="text-lg text-gray-600 mb-8">
-                  Transforme seu aprendizado em uma jornada épica. Ganhe XP, desbloqueie conquistas e domine a arte da programação.
+                  Transforme seu aprendizado em uma jornada épica. Ganhe XPP, desbloqueie conquistas e domine a arte da programação.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4">
                   <Link to="/auth?register=true">
