@@ -17,6 +17,7 @@ import AdmProfilePage from './pages/adm/ProfilePage';
 import AdmConfigPage from './pages/adm/ConfigPage';
 import ModulesPage from './pages/adm/ModulesPage';
 import ModuleQuestionsPage from './pages/adm/ModuleQuestionsPage';
+import Sobre from "./pages/Sobre";
 
 const queryClient = new QueryClient();
 
@@ -27,6 +28,7 @@ function App() {
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
+            <Route path="/sobre" element={<Sobre />} />
             <Route path="/auth" element={<AuthPage />} />
             
             {/* Rotas para usuários normais */}
