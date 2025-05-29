@@ -15,6 +15,7 @@ import AdmDashboard from "./pages/adm/AdmDashboard";
 import AdmCoursesPage from "./pages/adm/CoursesPage";
 import AdmProfilePage from "./pages/adm/ProfilePage";
 import AdmConfigPage from "./pages/adm/ConfigPage";
+import Sobre from "./pages/Sobre";
 
 const queryClient = new QueryClient();
 
@@ -26,72 +27,73 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/sobre" element={<Sobre />} />
           <Route path="/auth" element={<AuthPage />} />
-          <Route 
-            path="/dashboard" 
+          <Route
+            path="/dashboard"
             element={
               <ProtectedRoute>
                 <Dashboard />
               </ProtectedRoute>
-            } 
+            }
           />
-          <Route 
-            path="/cursos" 
+          <Route
+            path="/cursos"
             element={
               <ProtectedRoute>
                 <CoursesPage />
               </ProtectedRoute>
-            } 
+            }
           />
-          <Route 
-            path="/cursos/:courseId" 
+          <Route
+            path="/cursos/:courseId"
             element={
               <ProtectedRoute>
                 <CourseDetailPage />
               </ProtectedRoute>
-            } 
+            }
           />
-          <Route 
-            path="/perfil" 
+          <Route
+            path="/perfil"
             element={
               <ProtectedRoute>
                 <ProfilePage />
               </ProtectedRoute>
-            } 
+            }
           />
-          
+
           {/* Rotas Administrativas */}
-          <Route 
-            path="/adm-dashboard" 
+          <Route
+            path="/adm-dashboard"
             element={
               <ProtectedRoute requireAdmin>
                 <AdmDashboard />
               </ProtectedRoute>
-            } 
+            }
           />
-          <Route 
-            path="/adm/cursos" 
+          <Route
+            path="/adm/cursos"
             element={
               <ProtectedRoute requireAdmin>
                 <AdmCoursesPage />
               </ProtectedRoute>
-            } 
+            }
           />
-          <Route 
-            path="/adm/perfil" 
+          <Route
+            path="/adm/perfil"
             element={
               <ProtectedRoute requireAdmin>
                 <AdmProfilePage />
               </ProtectedRoute>
-            } 
+            }
           />
-          <Route 
-            path="/adm/configuracoes" 
+          <Route
+            path="/adm/configuracoes"
             element={
               <ProtectedRoute requireAdmin>
                 <AdmConfigPage />
               </ProtectedRoute>
-            } 
+            }
           />
           <Route path="*" element={<NotFound />} />
         </Routes>
