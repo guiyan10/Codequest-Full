@@ -10,20 +10,23 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { PlusIcon, LayoutDashboardIcon, BookIcon, UserRoundIcon, SettingsIcon, LogOutIcon, SearchIcon } from 'lucide-react';
+import { PlusIcon, LayoutDashboardIcon, BookIcon, UserRoundIcon, SettingsIcon, LogOutIcon, SearchIcon, PencilIcon, BookOpenIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { coursesService, Course, CreateCourseData } from '@/services/courses';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
+import { Card } from '@/components/ui/card';
 
 const CoursesPage = () => {
   const navigate = useNavigate();
   const { user, loading, logout } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [isAddCourseModalOpen, setIsAddCourseModalOpen] = useState(false);
+  const [isEditCourseModalOpen, setIsEditCourseModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [courses, setCourses] = useState<Course[]>([]);
   const [languages, setLanguages] = useState<{ id: number; name: string }[]>([]);
+  const [editingCourse, setEditingCourse] = useState<Course | null>(null);
   const [newCourse, setNewCourse] = useState<CreateCourseData>({
     title: '',
     description: '',
@@ -125,6 +128,7 @@ const CoursesPage = () => {
   const navigationItems = [
     { name: 'Dashboard', icon: <LayoutDashboardIcon className="w-5 h-5" />, path: '/adm-dashboard' },
     { name: 'Cursos', icon: <BookIcon className="w-5 h-5" />, path: '/adm/cursos', active: true },
+    { name: 'Módulos', icon: <BookOpenIcon className="w-5 h-5" />, path: '/adm/modulos' },
     { name: 'Perfil', icon: <UserRoundIcon className="w-5 h-5" />, path: '/adm/perfil' },
     { name: 'Configurações', icon: <SettingsIcon className="w-5 h-5" />, path: '/adm/configuracoes' },
   ];
@@ -148,8 +152,8 @@ const CoursesPage = () => {
   // Mock data for status
   const statusOptions = [
     { value: 'draft', label: 'Rascunho' },
-    { value: 'published', label: 'Publicado' },
-    { value: 'archived', label: 'Arquivado' }
+    { value: 'active', label: 'Ativo' },
+    { value: 'inactive', label: 'Inativo' }
   ];
 
   // Mock data for categories
@@ -221,6 +225,49 @@ const CoursesPage = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleEditCourse = async () => {
+    if (!editingCourse) return;
+
+    try {
+      setIsLoading(true);
+      const response = await coursesService.update(editingCourse.id, {
+        title: editingCourse.title,
+        description: editingCourse.description,
+        difficulty_level: editingCourse.difficulty_level,
+        status: editingCourse.status,
+        category: editingCourse.category,
+        language_id: editingCourse.language_id
+      });
+      
+      // Atualizar a lista de cursos
+      setCourses(prev => prev.map(course => 
+        course.id === editingCourse.id ? response.data : course
+      ));
+      
+      toast.success('Curso atualizado com sucesso!');
+      setIsEditCourseModalOpen(false);
+      setEditingCourse(null);
+    } catch (error: any) {
+      console.error('Error updating course:', error);
+      if (error.response?.data?.errors) {
+        Object.values(error.response.data.errors).forEach((messages: any) => {
+          messages.forEach((message: string) => {
+            toast.error(message);
+          });
+        });
+      } else {
+        toast.error('Erro ao atualizar curso. Tente novamente.');
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const openEditModal = (course: Course) => {
+    setEditingCourse(course);
+    setIsEditCourseModalOpen(true);
   };
 
   // Filter courses based on search term and selected category
@@ -357,7 +404,7 @@ const CoursesPage = () => {
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.3, delay: index * 0.1 }}
                           >
-                            <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200 hover:shadow-lg transition-shadow">
+                            <Card className="bg-white hover:shadow-lg transition-shadow">
                               <div className="p-6">
                                 <div className="flex items-center justify-between mb-4">
                                   <div className="flex items-center space-x-2">
@@ -369,32 +416,38 @@ const CoursesPage = () => {
                                       <p className="text-sm text-gray-500">{course.category}</p>
                                     </div>
                                   </div>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => openEditModal(course)}
+                                    className="text-gray-500 hover:text-codequest-purple"
+                                  >
+                                    <PencilIcon className="w-4 h-4" />
+                                  </Button>
                                 </div>
                                 
                                 <p className="text-gray-600 text-sm mb-4 line-clamp-2">{course.description}</p>
                                 
-                                <div className="flex items-center justify-between">
-                                  <div className="flex items-center space-x-2">
-                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                      course.difficulty_level === 'easy' ? 'bg-green-100 text-green-800' :
-                                      course.difficulty_level === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                                      'bg-red-100 text-red-800'
-                                    }`}>
-                                      {course.difficulty_level === 'easy' ? 'Fácil' :
-                                       course.difficulty_level === 'medium' ? 'Médio' : 'Difícil'}
-                                    </span>
-                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                      course.status === 'draft' ? 'bg-gray-100 text-gray-800' :
-                                      course.status === 'active' ? 'bg-green-100 text-green-800' :
-                                      'bg-red-100 text-red-800'
-                                    }`}>
-                                      {course.status === 'draft' ? 'Rascunho' :
-                                       course.status === 'active' ? 'Publicado' : 'Arquivado'}
-                                    </span>
-                                  </div>
+                                <div className="flex items-center space-x-2">
+                                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                    course.difficulty_level === 'easy' ? 'bg-green-100 text-green-800' :
+                                    course.difficulty_level === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                                    'bg-red-100 text-red-800'
+                                  }`}>
+                                    {course.difficulty_level === 'easy' ? 'Fácil' :
+                                     course.difficulty_level === 'medium' ? 'Médio' : 'Difícil'}
+                                  </span>
+                                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                    course.status === 'draft' ? 'bg-gray-100 text-gray-800' :
+                                    course.status === 'active' ? 'bg-green-100 text-green-800' :
+                                    'bg-red-100 text-red-800'
+                                  }`}>
+                                    {course.status === 'draft' ? 'Rascunho' :
+                                     course.status === 'active' ? 'Ativo' : 'Inativo'}
+                                  </span>
                                 </div>
                               </div>
-                            </div>
+                            </Card>
                           </motion.div>
                         ))}
                       </div>
@@ -547,6 +600,149 @@ const CoursesPage = () => {
                 disabled={isLoading}
               >
                 {isLoading ? 'Criando...' : 'Criar Curso'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Course Modal */}
+        <Dialog open={isEditCourseModalOpen} onOpenChange={setIsEditCourseModalOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-bold text-codequest-dark">Editar Curso</DialogTitle>
+            </DialogHeader>
+            
+            <div className="grid gap-6 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="edit-title">Título do Curso</Label>
+                <Input
+                  id="edit-title"
+                  value={editingCourse?.title || ''}
+                  onChange={(e) => setEditingCourse(prev => prev ? { ...prev, title: e.target.value } : null)}
+                  placeholder="Digite o título do curso"
+                  disabled={isLoading}
+                />
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="edit-description">Descrição</Label>
+                <Textarea
+                  id="edit-description"
+                  value={editingCourse?.description || ''}
+                  onChange={(e) => setEditingCourse(prev => prev ? { ...prev, description: e.target.value } : null)}
+                  placeholder="Digite a descrição do curso"
+                  className="min-h-[100px]"
+                  disabled={isLoading}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-difficulty">Nível de Dificuldade</Label>
+                  <Select
+                    value={editingCourse?.difficulty_level || ''}
+                    onValueChange={(value: 'easy' | 'medium' | 'hard') => 
+                      setEditingCourse(prev => prev ? { ...prev, difficulty_level: value } : null)
+                    }
+                    disabled={isLoading}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o nível" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {difficultyLevels.map((level) => (
+                        <SelectItem key={level.value} value={level.value}>
+                          {level.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-status">Status</Label>
+                  <Select
+                    value={editingCourse?.status || ''}
+                    onValueChange={(value: 'draft' | 'active' | 'inactive') => 
+                      setEditingCourse(prev => prev ? { ...prev, status: value } : null)
+                    }
+                    disabled={isLoading}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {statusOptions.map((status) => (
+                        <SelectItem key={status.value} value={status.value}>
+                          {status.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="edit-language">Linguagem (Opcional)</Label>
+                <Select
+                  value={editingCourse?.language_id?.toString() || ''}
+                  onValueChange={(value) => setEditingCourse(prev => prev ? { ...prev, language_id: value ? parseInt(value) : null } : null)}
+                  disabled={isLoading}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a linguagem" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {languages.map((language) => (
+                      <SelectItem key={language.id} value={language.id.toString()}>
+                        {language.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="edit-category">Categoria</Label>
+                <Select
+                  value={editingCourse?.category || ''}
+                  onValueChange={(value: 'frontend' | 'backend' | 'database' | 'mobile') => 
+                    setEditingCourse(prev => prev ? { ...prev, category: value } : null)
+                  }
+                  disabled={isLoading}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a categoria" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categoryOptions.map((category) => (
+                      <SelectItem key={category.value} value={category.value}>
+                        {category.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setIsEditCourseModalOpen(false);
+                  setEditingCourse(null);
+                }}
+                className="mr-2"
+                disabled={isLoading}
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleEditCourse}
+                className="bg-codequest-purple hover:bg-codequest-purple/90 text-white"
+                disabled={isLoading}
+              >
+                {isLoading ? 'Salvando...' : 'Salvar Alterações'}
               </Button>
             </DialogFooter>
           </DialogContent>

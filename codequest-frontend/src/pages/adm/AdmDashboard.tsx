@@ -19,6 +19,8 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { CalendarIcon } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { coursesService } from '@/services/courses';
 
 // Tipos para os dados
 interface DashboardStats {
@@ -155,17 +157,44 @@ const AdmDashboard = () => {
     { metric: 'Tempo Médio de Estudo', value: '45min', trend: 'up', change: '5min' },
   ];
 
-  // Efeito para carregar dados da API (simulado por enquanto)
+  // Efeito para carregar dados da API
   useEffect(() => {
-    // Aqui você faria as chamadas para sua API
-    // const fetchData = async () => {
-    //   const response = await fetch('/api/admin/dashboard');
-    //   const data = await response.json();
-    //   setStats(data.stats);
-    //   setTopCourses(data.topCourses);
-    //   setUserActivity(data.userActivity);
-    // };
-    // fetchData();
+    const fetchData = async () => {
+      try {
+        // Buscar dados dos cursos
+        const coursesData = await coursesService.getAll();
+        
+        // Atualizar estatísticas
+        setStats({
+          totalUsers: 0, // Implementar quando tiver a API de usuários
+          totalCourses: coursesData.length,
+          activeUsers: 0, // Implementar quando tiver a API de usuários ativos
+          completedCourses: 0, // Implementar quando tiver a API de cursos completados
+          revenue: 0, // Implementar quando tiver a API de receita
+          userGrowth: 0 // Implementar quando tiver a API de crescimento de usuários
+        });
+
+        // Atualizar top cursos
+        const sortedCourses = [...coursesData].sort((a, b) => 
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        ).slice(0, 5);
+
+        setTopCourses(sortedCourses.map(course => ({
+          id: course.id.toString(),
+          name: course.title,
+          enrollments: 0, // Implementar quando tiver a API de inscrições
+          completionRate: 0, // Implementar quando tiver a API de taxa de conclusão
+          rating: 0, // Implementar quando tiver a API de avaliações
+          revenue: 0 // Implementar quando tiver a API de receita
+        })));
+
+      } catch (error) {
+        console.error('Erro ao carregar dados do dashboard:', error);
+        toast.error('Erro ao carregar dados do dashboard');
+      }
+    };
+
+    fetchData();
   }, []);
 
   useEffect(() => {
@@ -325,13 +354,13 @@ const AdmDashboard = () => {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3 }}
                 >
-                  <Card className="bg-gradient-to-br from-indigo-500 to-indigo-600 text-white">
+                  <Card className="bg-gradient-to-br from-codequest-purple to-codequest-purple/80 text-white">
                     <CardContent className="pt-6">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-indigo-100">Total de Usuários</p>
+                          <p className="text-white/80">Total de Usuários</p>
                           <h3 className="text-3xl font-bold mt-2">{stats.totalUsers}</h3>
-                          <div className="flex items-center mt-2 text-indigo-100">
+                          <div className="flex items-center mt-2 text-white/80">
                             <TrendingUpIcon className="w-4 h-4 mr-1" />
                             <span>+{stats.userGrowth}% este mês</span>
                           </div>
@@ -349,13 +378,13 @@ const AdmDashboard = () => {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3, delay: 0.1 }}
                 >
-                  <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white">
+                  <Card className="bg-gradient-to-br from-codequest-emerald to-codequest-emerald/80 text-white">
                     <CardContent className="pt-6">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-green-100">Total de Cursos</p>
+                          <p className="text-white/80">Total de Cursos</p>
                           <h3 className="text-3xl font-bold mt-2">{stats.totalCourses}</h3>
-                          <p className="mt-2 text-green-100">Ativos na plataforma</p>
+                          <p className="mt-2 text-white/80">Ativos na plataforma</p>
                         </div>
                         <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center">
                           <BookOpenIcon className="w-6 h-6" />
@@ -370,13 +399,13 @@ const AdmDashboard = () => {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3, delay: 0.2 }}
                 >
-                  <Card className="bg-gradient-to-br from-orange-500 to-orange-600 text-white">
+                  <Card className="bg-gradient-to-br from-codequest-dark to-codequest-dark/80 text-white">
                     <CardContent className="pt-6">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-orange-100">Usuários Ativos</p>
+                          <p className="text-white/80">Usuários Ativos</p>
                           <h3 className="text-3xl font-bold mt-2">{stats.activeUsers}</h3>
-                          <p className="mt-2 text-orange-100">Últimos 30 dias</p>
+                          <p className="mt-2 text-white/80">Últimos 30 dias</p>
                         </div>
                         <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center">
                           <TrendingUpIcon className="w-6 h-6" />
@@ -391,15 +420,15 @@ const AdmDashboard = () => {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3, delay: 0.3 }}
                 >
-                  <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white">
+                  <Card className="bg-gradient-to-br from-codequest-light to-codequest-light/80 text-codequest-dark">
                     <CardContent className="pt-6">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-purple-100">Cursos Completados</p>
+                          <p className="text-codequest-dark/80">Cursos Completados</p>
                           <h3 className="text-3xl font-bold mt-2">{stats.completedCourses}</h3>
-                          <p className="mt-2 text-purple-100">Total acumulado</p>
+                          <p className="mt-2 text-codequest-dark/80">Total acumulado</p>
                         </div>
-                        <div className="w-12 h-12 bg-white/10 rounded-full flex items-center justify-center">
+                        <div className="w-12 h-12 bg-codequest-dark/10 rounded-full flex items-center justify-center">
                           <AwardIcon className="w-6 h-6" />
                         </div>
                       </div>

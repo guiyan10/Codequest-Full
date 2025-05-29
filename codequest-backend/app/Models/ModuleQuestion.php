@@ -7,9 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class Questions extends Model
+class ModuleQuestion extends Model
 {
-    /** @use HasFactory<\Database\Factories\QuestionsFactory> */
     use HasFactory;
 
     protected $fillable = [
@@ -25,8 +24,8 @@ class Questions extends Model
         return $this->belongsTo(Modules::class, 'module_id');
     }
 
-    public function answerOptions(): HasMany
+    public function options(): HasMany
     {
-        return $this->hasMany(AnswerOptions::class, 'question_id');
+        return $this->hasMany(ModuleQuestionOption::class, 'question_id');
     }
-}
+} 

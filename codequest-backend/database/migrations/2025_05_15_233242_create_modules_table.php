@@ -15,8 +15,10 @@ return new class extends Migration
             $table->id();
             $table->foreignId('course_id')->constrained('courses')->onDelete('cascade');
             $table->string('title');
-            $table->text('description')->nullable();
-              $table->unsignedInteger('order_index');
+            $table->text('description');
+            $table->text('content');
+            $table->unsignedInteger('order_index');
+            $table->json('questions')->nullable();
             $table->timestamps();
         });
     }
@@ -27,7 +29,5 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('modules');
-
     }
-    
 };

@@ -167,7 +167,7 @@ const AuthPage = () => {
             </div>
             
             {/* Auth Tabs */}
-            <div className="flex border-b border-gray-200 mb-6">
+            <div className="flex border-b mb-6">
               <button
                 className={`w-1/2 py-3 text-center font-medium text-sm transition-colors ${
                   isLogin 
