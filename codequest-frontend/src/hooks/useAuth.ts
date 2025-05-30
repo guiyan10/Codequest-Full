@@ -15,13 +15,17 @@ export const useAuth = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const updateUser = (userData: User) => {
+    setUser(userData);
+  };
+
   useEffect(() => {
     const fetchUser = async () => {
       try {
         const token = localStorage.getItem('token');
         if (token) {
           const response = await authAPI.me();
-          setUser(response.data);
+          updateUser(response.data);
         }
       } catch (error) {
         console.error('Error fetching user:', error);
@@ -41,7 +45,7 @@ export const useAuth = () => {
       
       if (token) {
         localStorage.setItem('token', token);
-        setUser(user);
+        updateUser(user);
       }
       
       return response;
@@ -70,6 +74,7 @@ export const useAuth = () => {
     login,
     logout,
     isAdmin,
-    isAuthenticated
+    isAuthenticated,
+    updateUser
   };
 }; 

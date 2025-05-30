@@ -15,7 +15,7 @@ import { coursesService } from '@/services/courses';
 const Dashboard = () => {
   const toast = useAlertToast();
   const navigate = useNavigate();
-  const { user, loading, logout } = useAuth();
+  const { user, loading, logout, updateUser } = useAuth();
   
   const [userProgress, setUserProgress] = useState({
     total_courses: 0,
@@ -89,7 +89,7 @@ const Dashboard = () => {
       try {
         setIsProgressLoading(true);
         const data = await coursesService.getUserProgress();
-        if (data.status === 'success') {
+        if (data) {
           setUserProgress({
             total_courses: data.total_courses,
             completed_courses_count: data.completed_courses_count,
@@ -99,7 +99,6 @@ const Dashboard = () => {
         }
       } catch (error) {
         console.error('Error fetching user progress:', error);
-        // Não mostrar erro ao usuário, apenas usar os dados fictícios
       } finally {
         setIsProgressLoading(false);
       }
@@ -162,6 +161,8 @@ const Dashboard = () => {
     return null;
   }
 
+  console.log("User object in Dashboard before ProfileStats:", user);
+
   const handleBadgeClick = (badge: any) => {
     if (badge.unlocked) {
       toast.info({
@@ -201,9 +202,9 @@ const Dashboard = () => {
                     <h3 className="font-medium text-codequest-dark">{user.name}</h3>
                     <div className="flex items-center">
                       <div className="w-4 h-4 bg-codequest-purple rounded-full flex items-center justify-center text-white text-xs font-bold mr-1">
-                        {user.level}
+                        {user.xp}
                       </div>
-                      <span className="text-xs text-gray-500">Nível {user.level}</span>
+                      <span className="text-xs text-gray-500">XP</span>
                     </div>
                   </div>
                 </div>
@@ -264,7 +265,7 @@ const Dashboard = () => {
                       <path d="M12 2V6M12 18V22M6 12H2M22 12H18M19.07 4.93L16.24 7.76M7.76 16.24L4.93 19.07M4.93 4.93L7.76 7.76M16.24 16.24L19.07 19.07" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   </div>
-                  <span className="font-semibold">{user.streak} dias</span>
+                  <span className="font-semibold">{user.level} dias</span>
                 </div>
               </div>
             </header>
@@ -276,7 +277,13 @@ const Dashboard = () => {
               </div>
 
               <div className="mb-8">
-                <ProfileStats stats={user} />
+                <ProfileStats stats={{
+                  level: user.level || 0,
+                  xp: user.xp || 0,
+                  streak: 0,
+                  completed: userProgress.completed_modules_count || 0,
+                  rank: 0
+                }} />
               </div>
 
               <div className="mb-8">

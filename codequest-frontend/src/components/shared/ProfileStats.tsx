@@ -1,52 +1,53 @@
-
 import React from 'react';
 import { motion } from 'framer-motion';
 import AnimatedNumber from './AnimatedNumber';
 
 interface ProfileStatsProps {
-  stats: {
-    level: number;
-    xp: number;
-    streak: number;
-    completed: number;
-    rank: number;
+  stats?: {
+    level?: number;
+    xp?: number;
+    streak?: number;
+    completed?: number;
+    rank?: number;
   };
 }
 
 const ProfileStats: React.FC<ProfileStatsProps> = ({ stats }) => {
+  const safeStats = stats || {};
+
   return (
     <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
       <StatsCard 
         title="Nível" 
-        value={stats.level} 
+        value={safeStats.level || 0} 
         icon={<LevelIcon />} 
         color="bg-gradient-to-r from-codequest-purple to-purple-400" 
         delay={0}
       />
       <StatsCard 
         title="XP" 
-        value={stats.xp} 
+        value={safeStats.xp || 0} 
         icon={<XPIcon />} 
         color="bg-gradient-to-r from-yellow-400 to-amber-500" 
         delay={1}
       />
       <StatsCard 
         title="Dias Seguidos" 
-        value={stats.streak} 
+        value={safeStats.level || 0} 
         icon={<StreakIcon />} 
         color="bg-gradient-to-r from-red-400 to-red-500" 
         delay={2}
       />
       <StatsCard 
         title="Módulos" 
-        value={stats.completed} 
+        value={safeStats.completed || 0} 
         icon={<CompletedIcon />} 
         color="bg-gradient-to-r from-codequest-emerald to-teal-400" 
         delay={3}
       />
       <StatsCard 
         title="Ranking" 
-        value={stats.rank} 
+        value={safeStats.rank || 0} 
         icon={<RankIcon />} 
         color="bg-gradient-to-r from-blue-500 to-blue-400" 
         delay={4}

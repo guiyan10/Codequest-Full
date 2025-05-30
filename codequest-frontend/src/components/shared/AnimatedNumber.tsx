@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef } from 'react';
 
 interface AnimatedNumberProps {
@@ -62,7 +61,7 @@ const AnimatedNumber: React.FC<AnimatedNumberProps> = ({
       }
       isMounted.current = false;
     };
-  }, [value, duration, displayValue]);
+  }, [value, duration]);
 
   return (
     <span className={className}>
