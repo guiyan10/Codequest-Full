@@ -207,6 +207,7 @@ const CourseDetailPage = () => {
                             xp={module.xp}
                             index={index}
                             is_completed={module.is_completed || false}
+                            progress={module.progress || 0}
                           />
                         );
                       })}

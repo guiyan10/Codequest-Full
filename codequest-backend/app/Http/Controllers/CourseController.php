@@ -258,23 +258,44 @@ class CourseController extends Controller
      */
     public function getModules(Course $course)
     {
-        $user = Auth::user();
+        try {
+            $user = Auth::user();
 
-        $modules = $course->modules()->with(['questions.options'])->get();
+            $modules = $course->modules()->with(['questions.options'])->get();
 
-        // Add completion status for the authenticated user
-        $modules = $modules->map(function ($module) use ($user) {
-            $isCompleted = false;
-            if ($user) {
-                // Check directly if a completedModules record exists for this module
-                $completedModule = $user->completedModules->firstWhere('module_id', $module->id);
-                $isCompleted = (bool) $completedModule;
-            }
-            $module->is_completed = $isCompleted;
-            return $module;
-        });
+            // Add completion status and progress for the authenticated user
+            $modules = $modules->map(function ($module) use ($user) {
+                $isCompleted = false;
+                $progress = 0;
 
-        return response()->json($modules);
+                if ($user) {
+                    // Check if module is completed
+                    $completedModule = $user->completedModules->firstWhere('module_id', $module->id);
+                    $isCompleted = (bool) $completedModule;
+
+                    // Calculate progress based on answered questions
+                    $totalQuestions = $module->questions ? $module->questions->count() : 0;
+                    if ($totalQuestions > 0) {
+                        $answeredQuestions = $user->moduleAnswers()
+                            ->whereIn('module_question_id', $module->questions->pluck('id'))
+                            ->count();
+                        $progress = round(($answeredQuestions / $totalQuestions) * 100);
+                    }
+                }
+
+                $module->is_completed = $isCompleted;
+                $module->progress = $progress;
+                return $module;
+            });
+
+            return response()->json($modules);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Erro ao buscar módulos do curso',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**

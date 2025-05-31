@@ -61,44 +61,65 @@ const ModulePage = () => {
         setModule(formattedModule);
 
         if (reviewMode) {
-          // Load user answers for review mode
-          const userAnswers = await modulesService.getUserModuleAnswers(moduleId);
-          console.log('User answers for review:', userAnswers);
+          try {
+            console.log('Loading user answers for review mode...');
+            // Load user answers for review mode
+            const userAnswers = await modulesService.getUserModuleAnswers(moduleId);
+            console.log('User answers for review:', userAnswers);
 
-          const results: Record<number, AnswerResponse> = {};
-          let calculatedTotalPoints = 0;
+            if (!userAnswers || !Array.isArray(userAnswers)) {
+              console.error('Invalid user answers data:', userAnswers);
+              throw new Error('Invalid user answers data');
+            }
 
-          userAnswers.forEach((answer: any) => {
+            const results: Record<number, AnswerResponse> = {};
+            let calculatedTotalPoints = 0;
+
+            userAnswers.forEach((answer: any) => {
+              console.log('Processing answer:', answer);
               const question = formattedModule.questions.find(q => q.id === answer.module_question_id);
               if (question) {
-                  const correctOption = question.options?.find(opt => opt.is_correct);
-                  const isCorrect = correctOption?.option_text === answer.answer;
-                  results[question.id] = {
-                      status: isCorrect ? 'correct' : 'incorrect',
-                      is_correct: isCorrect,
-                      correct_answer: correctOption?.option_text || '',
-                      points: isCorrect ? question.points : 0,
-                      user_answer: answer.answer // Assuming answer has this property
-                  };
-                  if (isCorrect) {
-                      calculatedTotalPoints += question.points;
-                  }
+                const correctOption = question.options?.find(opt => opt.is_correct);
+                const isCorrect = answer.is_correct;
+                results[question.id] = {
+                  status: isCorrect ? 'correct' : 'incorrect',
+                  is_correct: isCorrect,
+                  correct_answer: correctOption?.option_text || '',
+                  points: isCorrect ? question.points : 0,
+                  user_answer: answer.answer
+                };
+                if (isCorrect) {
+                  calculatedTotalPoints += question.points;
+                }
+              } else {
+                console.warn('Question not found for answer:', answer);
               }
-          });
-          setAnswerResults(results);
-          setTotalPoints(calculatedTotalPoints);
-          setSubmitted(true); // Set submitted to true in review mode
+            });
 
+            console.log('Processed results:', results);
+            console.log('Total points:', calculatedTotalPoints);
+
+            setAnswerResults(results);
+            setTotalPoints(calculatedTotalPoints);
+            setSubmitted(true);
+          } catch (error) {
+            console.error('Error loading user answers:', error);
+            toast.error({
+              title: 'Erro',
+              description: 'Erro ao carregar respostas do usuário'
+            });
+            navigate(`/cursos/${courseId}`);
+          }
         } else {
           // Normal mode: Initialize empty answers
           const initialAnswers: Record<number, string> = {};
           formattedModule.questions.forEach(q => {
-              if (q.options && q.options.length > 0) {
-                  initialAnswers[q.id] = '';
-              }
+            if (q.options && q.options.length > 0) {
+              initialAnswers[q.id] = '';
+            }
           });
           setAnswers(initialAnswers);
-          setSubmitted(false); // Ensure not submitted in normal mode initially
+          setSubmitted(false);
         }
       } else {
         toast.error({
@@ -130,9 +151,9 @@ const ModulePage = () => {
     if (!module) return;
 
     try {
-      let totalPointsEarned = 0;
       const answersToSubmit: { question_id: number; answer: string }[] = [];
 
+      // First validate that all questions are answered
       for (const question of module.questions) {
         const answer = answers[question.id];
         if (answer === undefined || answer === null || answer === '') {
@@ -144,16 +165,24 @@ const ModulePage = () => {
         }
 
         answersToSubmit.push({
-            question_id: question.id,
-            answer: answer
+          question_id: question.id,
+          answer: answer
         });
+      }
 
-        const correctOption = question.options?.find(opt => opt.is_correct);
-        if (correctOption && answer === correctOption.option_text) {
-            totalPointsEarned += question.points;
+      // Submit answers to server and get results
+      const results: Record<number, AnswerResponse> = {};
+      let totalPointsEarned = 0;
+
+      for (const answer of answersToSubmit) {
+        const response = await modulesService.submitAnswer(module.id, answer.question_id, answer.answer);
+        results[answer.question_id] = response;
+        if (response.is_correct) {
+          totalPointsEarned += response.points;
         }
       }
 
+      setAnswerResults(results);
       setTotalPoints(totalPointsEarned);
       setSubmitted(true);
 
@@ -167,7 +196,10 @@ const ModulePage = () => {
             title: 'Sucesso',
             description: `Parabéns! Você completou o módulo e ganhou ${completionResult.xp_earned} XP!`
           });
-          navigate(`/cursos/${courseId}`);
+          // Add a small delay before navigation to ensure the toast is shown
+          setTimeout(() => {
+            navigate(`/cursos/${courseId}`, { replace: true });
+          }, 1500);
         } catch (error) {
           console.error('Error completing module:', error);
           toast.error({
@@ -320,13 +352,14 @@ const ModulePage = () => {
                 {module.questions.map((question, index) => {
                   const isCorrect = submitted && answerResults[question.id]?.is_correct;
                   const userAnswer = submitted ? answerResults[question.id]?.user_answer : answers[question.id];
+                  const correctAnswer = submitted ? answerResults[question.id]?.correct_answer : null;
 
                   return (
                     <Card key={question.id} className={submitted ? (isCorrect ? 'border-green-500' : 'border-red-500') : ''}>
                       <CardHeader>
                         <CardTitle className="text-lg font-semibold text-codequest-dark flex items-center">
                           Questão {index + 1}
-                          {submitted && ( // Show check or cross icon after submission
+                          {submitted && (
                             isCorrect ? (
                               <CheckCircleIcon className="ml-2 w-5 h-5 text-green-500" />
                             ) : (
@@ -345,14 +378,23 @@ const ModulePage = () => {
                           <div role="radiogroup" className="space-y-2 block">
                             {question.options && question.options.length > 0 ? (
                               question.options.map(option => {
-                                const isChecked = isReviewMode 
-                                  ? answerResults[question.id]?.correct_answer === option.option_text 
-                                  : answers[question.id] === option.option_text;
-                                const isCorrect = submitted && answerResults[question.id]?.is_correct && option.is_correct;
-                                const isUserAnswerIncorrect = submitted && !answerResults[question.id]?.is_correct && answerResults[question.id]?.user_answer === option.option_text;
+                                const isChecked = userAnswer === option.option_text;
+                                const isCorrectOption = submitted && correctAnswer === option.option_text;
+                                const isUserAnswerIncorrect = submitted && !isCorrect && userAnswer === option.option_text;
 
                                 return (
-                                  <div key={option.id} className={`flex items-center space-x-2 p-2 rounded-md cursor-pointer min-h-[30px] ${isReviewMode ? '' : 'hover:bg-gray-50'}`}>
+                                  <div 
+                                    key={option.id} 
+                                    className={`flex items-center space-x-2 p-2 rounded-md cursor-pointer min-h-[30px] ${
+                                      submitted 
+                                        ? isCorrectOption 
+                                          ? 'bg-green-50 border border-green-200' 
+                                          : isUserAnswerIncorrect 
+                                            ? 'bg-red-50 border border-red-200'
+                                            : ''
+                                        : 'hover:bg-gray-50'
+                                    }`}
+                                  >
                                     <input
                                       type="radio"
                                       id={`question-${question.id}-option-${option.id}`}
@@ -360,22 +402,20 @@ const ModulePage = () => {
                                       value={option.option_text}
                                       checked={isChecked}
                                       onChange={(e) => handleAnswerChange(question.id, e.target.value)}
-                                      disabled={isReviewMode}
+                                      disabled={submitted}
                                       className="border-gray-300 w-4 h-4 text-codequest-purple focus:ring-codequest-purple"
                                       style={{ display: 'block' }}
                                     />
                                     <label
                                       htmlFor={`question-${question.id}-option-${option.id}`}
                                       className={`flex-1 cursor-pointer text-gray-700 ${
-                                        isReviewMode
-                                          ? option.is_correct ? 'text-green-600 font-semibold' : ''
-                                          : submitted
-                                            ? isCorrect
-                                              ? 'text-green-600 font-semibold'
-                                              : isUserAnswerIncorrect
-                                                ? 'text-red-600'
-                                                : ''
-                                            : ''
+                                        submitted
+                                          ? isCorrectOption
+                                            ? 'text-green-600 font-semibold'
+                                            : isUserAnswerIncorrect
+                                              ? 'text-red-600'
+                                              : ''
+                                          : ''
                                       }`}
                                       style={{ display: 'block' }}
                                     >
@@ -390,7 +430,13 @@ const ModulePage = () => {
                           </div>
                         )}
 
-                        {isReviewMode && question.explanation && (
+                        {submitted && !isCorrect && (
+                          <div className="mt-4 p-4 bg-red-50 rounded-md text-red-700 text-sm">
+                            <p className="font-semibold">Resposta correta: {correctAnswer}</p>
+                          </div>
+                        )}
+
+                        {question.explanation && (
                           <div className="mt-4 p-4 bg-gray-100 rounded-md text-gray-700 text-sm">
                             <h4 className="font-semibold mb-2">Explicação:</h4>
                             <p>{question.explanation}</p>

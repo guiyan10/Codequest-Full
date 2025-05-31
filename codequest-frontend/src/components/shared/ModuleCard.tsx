@@ -1,7 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { LockIcon, CheckCircleIcon, PlayCircleIcon } from 'lucide-react';
+import { LockIcon, CheckCircleIcon, PlayCircleIcon, ArrowRightIcon, BookOpenIcon } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface ModuleCardProps {
   id: number;
@@ -13,6 +14,7 @@ interface ModuleCardProps {
   xp: number;
   index: number;
   is_completed: boolean;
+  progress?: number;
 }
 
 const ModuleCard: React.FC<ModuleCardProps> = ({
@@ -25,6 +27,7 @@ const ModuleCard: React.FC<ModuleCardProps> = ({
   xp,
   index,
   is_completed,
+  progress = 0,
 }) => {
   const getStatusIcon = () => {
     switch (status) {
@@ -59,13 +62,24 @@ const ModuleCard: React.FC<ModuleCardProps> = ({
     }
   };
 
+  const getButtonColor = () => {
+    switch (status) {
+      case 'completed':
+        return 'bg-cyan-600 hover:bg-cyan-700';
+      case 'in-progress':
+        return 'bg-codequest-purple hover:bg-codequest-purple/90';
+      default:
+        return 'bg-gray-400 hover:bg-gray-500';
+    }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1 }}
-      className={`bg-white rounded-xl p-6 shadow-sm border ${
-        status === 'locked' ? 'border-gray-200' : 'border-codequest-purple'
+      className={`bg-white rounded-xl p-6 shadow-md hover:shadow-lg transition-all ${
+        status === 'locked' ? 'border border-gray-200' : 'border border-codequest-purple'
       }`}
     >
       <div className="flex items-start justify-between">
@@ -77,6 +91,25 @@ const ModuleCard: React.FC<ModuleCardProps> = ({
           </div>
           <h3 className="text-lg font-semibold text-codequest-dark mb-2">{title}</h3>
           <p className="text-gray-600 text-sm mb-4">{description}</p>
+          
+          {/* Progress Bar */}
+          {status !== 'locked' && (
+            <div className="mb-4">
+              <div className="flex justify-between text-sm mb-1">
+                <span className="text-gray-500">Progresso</span>
+                <span className="font-medium">{status === 'completed' ? '100%' : `${progress}%`}</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div 
+                  className={`h-2 rounded-full ${
+                    status === 'completed' ? 'bg-cyan-600' : 'bg-codequest-purple'
+                  }`}
+                  style={{ width: `${status === 'completed' ? '100' : progress}%` }}
+                ></div>
+              </div>
+            </div>
+          )}
+
           <div className="flex items-center space-x-4">
             <div className={`px-3 py-1 rounded-full text-sm ${getStatusColor()}`}>
               {getStatusIcon()}
@@ -89,14 +122,35 @@ const ModuleCard: React.FC<ModuleCardProps> = ({
           </div>
         </div>
       </div>
-      <div className="mt-4 flex justify-between items-center">
-        {status !== 'locked' && (
-          <Link
-            to={status === 'completed' ? `/cursos/${courseId}/modulo/${id}?mode=review` : `/cursos/${courseId}/modulo/${id}`}
-            className="text-codequest-purple hover:text-codequest-dark font-medium text-sm"
-          >
-            {status === 'completed' ? 'Revisar módulo' : 'Continuar módulo'} →
+
+      {/* Action Button */}
+      <div className="mt-6">
+        {status !== 'locked' ? (
+          <Link to={status === 'completed' ? `/cursos/${courseId}/modulo/${id}?mode=review` : `/cursos/${courseId}/modulo/${id}`}>
+            <Button 
+              className={`w-full ${getButtonColor()}`}
+            >
+              {status === 'completed' ? (
+                <>
+                  <BookOpenIcon className="w-4 h-4 mr-2" />
+                  Revisar Módulo
+                </>
+              ) : (
+                <>
+                  <PlayCircleIcon className="w-4 h-4 mr-2" />
+                  {progress > 0 ? 'Continuar Módulo' : 'Começar Módulo'}
+                </>
+              )}
+            </Button>
           </Link>
+        ) : (
+          <Button 
+            className="w-full bg-gray-400 hover:bg-gray-500 cursor-not-allowed"
+            disabled
+          >
+            <LockIcon className="w-4 h-4 mr-2" />
+            Módulo Bloqueado
+          </Button>
         )}
       </div>
     </motion.div>

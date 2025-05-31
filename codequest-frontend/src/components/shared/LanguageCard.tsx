@@ -1,6 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { Button } from '@/components/ui/button';
+import { PlayIcon, BookOpenIcon } from 'lucide-react';
 
 interface LanguageCardProps {
   language: {
@@ -71,6 +73,8 @@ const LanguageCard: React.FC<LanguageCardProps> = ({ language, delay = 0 }) => {
     }
   };
 
+  const isCompleted = language.progress === 100;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -78,7 +82,7 @@ const LanguageCard: React.FC<LanguageCardProps> = ({ language, delay = 0 }) => {
       transition={{ duration: 0.5, delay: delay * 0.1 }}
       className="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow"
     >
-      <Link to={`/cursos/${language.id}`} className="block p-6">
+      <div className="p-6">
         <div className="flex items-center mb-4">
           <div className={`w-12 h-12 rounded-lg ${language.color} flex items-center justify-center mr-4`}>
             <img src={language.icon} alt={language.name} className="w-8 h-8" />
@@ -89,7 +93,7 @@ const LanguageCard: React.FC<LanguageCardProps> = ({ language, delay = 0 }) => {
           </div>
         </div>
         <p className="text-gray-600 text-sm mb-4 line-clamp-2">{language.description}</p>
-        <div>
+        <div className="mb-4">
           <div className="flex justify-between text-sm mb-1">
             <span className="text-gray-500">Progresso</span>
             <span className="font-medium">{language.progress}%</span>
@@ -101,7 +105,28 @@ const LanguageCard: React.FC<LanguageCardProps> = ({ language, delay = 0 }) => {
             ></div>
           </div>
         </div>
-      </Link>
+        <Link to={`/cursos/${language.id}`}>
+          <Button 
+            className={`w-full ${
+              isCompleted 
+                ? 'bg-cyan-600 hover:bg-cyan-700' 
+                : 'bg-codequest-purple hover:bg-codequest-purple/90'
+            }`}
+          >
+            {isCompleted ? (
+              <>
+                <BookOpenIcon className="w-4 h-4 mr-2" />
+                Revisar Curso
+              </>
+            ) : (
+              <>
+                <PlayIcon className="w-4 h-4 mr-2" />
+                {language.progress > 0 ? 'Continuar Curso' : 'Começar Curso'}
+              </>
+            )}
+          </Button>
+        </Link>
+      </div>
     </motion.div>
   );
 };

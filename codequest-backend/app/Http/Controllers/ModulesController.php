@@ -212,37 +212,11 @@ class ModulesController extends Controller
                 ->get();
 
             // Formatar os resultados para incluir a resposta correta e explicação
-            $formattedAnswers = $userAnswers->map(function ($userAnswer) use ($module) {
-                // Safely find the correct option
-                $correctOption = null;
-                $optionsData = [];
-                $questionText = 'Questão não encontrada';
-                $explanationText = null;
-
-                if ($userAnswer->question) {
-                    $questionText = $userAnswer->question->question_text;
-                    $explanationText = $userAnswer->question->explanation; // Get the explanation
-
-                    if ($userAnswer->question->options) {
-                         $correctOption = $userAnswer->question->options->where('is_correct', true)->first();
-
-                         $optionsData = $userAnswer->question->options->map(function($option) {
-                            return [
-                                'id' => $option->id,
-                                'option_text' => $option->option_text,
-                            ];
-                        })->toArray();
-                    }
-                }
-
+            $formattedAnswers = $userAnswers->map(function ($userAnswer) {
                 return [
                     'module_question_id' => $userAnswer->module_question_id,
-                    'question_text' => $questionText,
-                    'submitted_answer' => $userAnswer->submitted_answer,
-                    'is_correct' => $userAnswer->is_correct,
-                    'correct_answer' => $correctOption ? $correctOption->option_text : null,
-                    'options' => $optionsData,
-                    'explanation' => $explanationText, // Include the explanation
+                    'answer' => $userAnswer->submitted_answer,
+                    'is_correct' => $userAnswer->is_correct
                 ];
             });
 
